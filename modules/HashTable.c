@@ -26,8 +26,8 @@ HashTable hash_create(int size, HashFunc hash_fn, int bucket_size) {
 	ht->size = size;
 	// Initially the ht is empty
 	ht->items = 0;
-	// Hold the bucketsize. TODO: check if usefull 
-	ht->bucket_size = bucket_size;
+	// Hold the bucketsize, so that is a multiple of the size of the struct.
+	ht->bucket_size = (bucket_size / sizeof(struct hash_entry)) * sizeof(struct hash_entry);
 	// We deferentiate the hts, by passing each hash function into the struct
 	ht->hash_function = hash_fn;
 	return ht;
@@ -93,5 +93,6 @@ HashEntry hash_search(HashTable ht, char* name) {
 			pos = 0;
 		}
 	}
+	// For whatever reason we are here, something is wrong, so return NULL
 	return NULL;
 }

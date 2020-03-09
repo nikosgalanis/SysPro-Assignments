@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "dates.h": "c"
+        "dates.h": "c",
+        "string.h": "c",
+        "hashtable.h": "c"
     }
 }

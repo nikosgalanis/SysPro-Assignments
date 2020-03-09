@@ -2,8 +2,10 @@
 
 #include "common_types.h"
 
-typedef struct Date {
+typedef struct date {
     int day;
     int month;
     int year;
-} date;
+} Date;
+
+#define EOF_DATE (Date)0
