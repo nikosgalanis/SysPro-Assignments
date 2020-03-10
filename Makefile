@@ -2,7 +2,7 @@ TARGET_EXEC = disease_monitor
 
 CC = gcc
 
-BUILD_DIR ?= ./build
+BUILD_DIR = ./build
 SRC_DIRS = ./programs ./modules
 INC_DIRS = ./include
 

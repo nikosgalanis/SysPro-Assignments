@@ -29,3 +29,7 @@ struct hash_table {
 };
 
 typedef struct hash_table* HashTable;
+
+HashTable hash_create(int size, HashFunc hash_fn, int bucket_size);
+void hash_insert(HashTable ht, HashEntry new_entry);
+HashEntry hash_search(HashTable ht, char* name);

@@ -9,3 +9,5 @@ typedef struct date {
 } Date;
 
 #define EOF_DATE (Date)0
+
+Date string_to_date(char* d);
