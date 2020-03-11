@@ -13,6 +13,8 @@ TreeEntry create_tree_entry(Date date, Pointer assgn) {
 
     entry->date = date;
     entry->assigned_patient = assgn;
+
+    return entry;
 }
 
 // Create a new tree node
@@ -37,9 +39,13 @@ Tree create_tree(CompareFunc compare, DestroyFunc destroy) {
     return tree;
 }
 
+static int node_height(TreeNode node) {
+    return node != NULL ? node->height : 0;
+}
+
 // Update the node height
 static void update_node_height(TreeNode node) {
-	node->height = 1 + int_max(node_height(node->left), node_height(node->right));
+	node->height = 1 + max(node_height(node->left), node_height(node->right));
 }
 
 // Return the difference of the heights of the left & right subtree
@@ -110,7 +116,7 @@ TreeNode maintain_property(TreeNode node) {
     }
 }
 
-Tree insert_node_to_tree(Tree tree, TreeNode node, TreeEntry entry) {
+TreeNode insert_node_to_tree(Tree tree, TreeNode node, TreeEntry entry) {
     if (node == NULL) {
         return create_tree_node(entry);
     }
@@ -120,7 +126,7 @@ Tree insert_node_to_tree(Tree tree, TreeNode node, TreeEntry entry) {
     } else {
         node->right = insert_node_to_tree(tree, node->right, entry);
     }
-
+    return maintain_property(node);
 }
 
 // Give the root of the tree, in order to insert a new entry to it.

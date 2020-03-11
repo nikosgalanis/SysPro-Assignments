@@ -3,7 +3,7 @@
 #include "Dates.h"
 
 typedef struct patient {
-    int id;
+    char* id;
     char* first_name;
     char* last_name;
     char* disease;

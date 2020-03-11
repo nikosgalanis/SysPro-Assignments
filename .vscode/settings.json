@@ -3,6 +3,7 @@
         "dates.h": "c",
         "string.h": "c",
         "hashtable.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "globalstructures.h": "c"
     }
 }

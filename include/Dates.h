@@ -1,7 +1,6 @@
 #pragma once
 
 #include "common_types.h"
-#include "BalancedTree.h"
 
 typedef struct date {
     int day;
@@ -13,7 +12,3 @@ typedef struct date {
 
 Date string_to_date(char* d);
 int compare_dates(Date date1, Date date2);
-
-int compare(TreeEntry ent1, TreeEntry ent2) {
-    return compare_dates(ent1->date, ent2->date);
-}

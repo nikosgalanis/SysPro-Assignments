@@ -6,6 +6,8 @@ HashEntry create_hash_entry(char* key, Pointer item) {
 	HashEntry new_entry = malloc(sizeof(*new_entry));
 	new_entry->key = key; //TODO: Does this work?
 	new_entry->item = item;
+
+	return new_entry;
 }
 
 HashNode create_hash_node(int bucket_size) {
@@ -101,4 +103,28 @@ HashEntry hash_search(HashTable ht, char* key) {
 	}
 	// For whatever reason we are here, something is wrong, so return NULL
 	return NULL;
+}
+
+void hash_traverse(HashTable ht, PrintFunc print) {
+	HashNode current;
+	int entries  = ht->bucket_size / sizeof(struct hash_entry);
+	for (int i = 0; i < ht->size; i++) {
+		int pos = 0;
+		current = ht->array[i];
+		for (pos = 0; pos < entries; pos++) {
+			char* name = current->bucket[pos]->key;
+			print(current->bucket[pos]);
+			if (pos == entries - 1) {
+				// If there is, we go on to the next node
+				if (current->next != NULL) {
+					current = current->next;
+				}
+				// If there is not, then we've reached a dead-end, so we break
+				else 
+					break;
+				// Either way, we go back to the 0-th position on the bucket.
+				pos = 0;
+			}
+		}
+	}
 }

@@ -10,11 +10,5 @@ typedef unsigned int uint;
 typedef int (*CompareFunc)(Pointer a, Pointer b);
 typedef void (*DestroyFunc)(Pointer value);
 typedef uint (*HashFunc)(Pointer);
-
-
-uint hash_strings(char* str) {
-    int h = 0, a = 33;
-	for (; *str != '\0'; str++)
-		h = (a * h + *str);
-	return h;
-}
+typedef void (*PrintFunc)(Pointer);
+void parse_input (char* file, int num_countries, int num_diseases, int bucket_size);

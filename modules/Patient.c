@@ -9,7 +9,7 @@ Patient create_patient(char* str) {
     // Our delimiter will be the space character
     char delim[2] = " ";
     
-    int id = atoi(strtok(str, delim));
+    char* id = strtok(str, delim);
     char* first_name = strtok(NULL, delim);
     char* last_name = strtok(NULL, delim);
     char* disease = strtok(NULL, delim);
