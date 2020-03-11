@@ -24,6 +24,6 @@ int main(int argc, char const *argv[]) {
         printf("Use as ./diseaseMonitor -p patientRecordsFile –h1 diseaseHashtableNumOfEntries –h2 countryHashtableNumOfEntries –b bucketSize\n");
         exit(EXIT_FAILURE);
     }
-
+    monitor_menu();
 
 }

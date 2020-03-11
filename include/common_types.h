@@ -1,16 +1,20 @@
 #pragma once
 #include <stdbool.h> 
+#include <stdlib.h>
 
 // Usefull typedefs
 typedef void* Pointer;
-#include "HashTable.h"
 
 typedef unsigned int uint;
 
 typedef int (*CompareFunc)(Pointer a, Pointer b);
 typedef void (*DestroyFunc)(Pointer value);
-int nlines(FILE* input);
+typedef uint (*HashFunc)(Pointer);
 
-// Our global pointers to store the hash tables
-HashTable diseaseHashTable;
-HashTable countryHashTable;
+
+uint hash_strings(char* str) {
+    int h = 0, a = 33;
+	for (; *str != '\0'; str++)
+		h = (a * h + *str);
+	return h;
+}

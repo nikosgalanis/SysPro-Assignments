@@ -2,13 +2,19 @@
 #include "HashTable.h"
 #include <string.h>
 
+HashEntry create_hash_entry(char* key, Pointer item) {
+	HashEntry new_entry = malloc(sizeof(*new_entry));
+	new_entry->key = key; //TODO: Does this work?
+	new_entry->item = item;
+}
+
 HashNode create_hash_node(int bucket_size) {
 	HashNode new_node = malloc(sizeof(struct hash_node));
 	// Create a bucket which contains "bucketsize" bytes
 	new_node->bucket = malloc(bucket_size); //TODO: change to somthing that fits exactly n
-	// initialize our entries to null TODO: Maybe use an empty bool variable
+	// initialize our entries to null //TODO: Maybe use an empty bool variable
 	for (int j = 0; j < bucket_size / sizeof(struct hash_entry); j++) {
-		new_node->bucket[0]->tree_root = NULL;			
+		new_node->bucket[0]->item = NULL;			
 	}
 	// We are going to use that as an overflow list pointer for each bucket
 	new_node->next = NULL;
@@ -18,16 +24,16 @@ HashNode create_hash_node(int bucket_size) {
 // Create an empty hash table, with pre-determined size
 HashTable hash_create(int size, HashFunc hash_fn, int bucket_size) {
 	HashTable ht = malloc(sizeof(*ht));
+	// Hold the bucketsize, so that is a multiple of the size of the struct.
+	ht->bucket_size = (bucket_size / sizeof(struct hash_entry)) * sizeof(struct hash_entry);
 	ht->array = malloc(size * sizeof(HashNode));
 	for (int i = 0; i < size; i++) {
-		ht->array[i] = create_hash_node(bucket_size);
+		ht->array[i] = create_hash_node(ht->bucket_size);
 	}
 	// Store the size of the ht
 	ht->size = size;
 	// Initially the ht is empty
 	ht->items = 0;
-	// Hold the bucketsize, so that is a multiple of the size of the struct.
-	ht->bucket_size = (bucket_size / sizeof(struct hash_entry)) * sizeof(struct hash_entry);
 	// We deferentiate the hts, by passing each hash function into the struct
 	ht->hash_function = hash_fn;
 	return ht;
@@ -36,7 +42,7 @@ HashTable hash_create(int size, HashFunc hash_fn, int bucket_size) {
 // Insert a new entry in the hash table
 void hash_insert(HashTable ht, HashEntry new_entry) {
 	// Use the hash function to determine where our new entry is gonna go
-	int hash_id = ht->hash_function(new_entry->name) % ht->size;
+	int hash_id = ht->hash_function(new_entry->key) % ht->size;
 	HashNode requested = ht->array[hash_id];
 	int entries = ht->bucket_size / sizeof(struct hash_entry);
 	// Traverse all the records in this bucket until u find an empty space
@@ -44,7 +50,7 @@ void hash_insert(HashTable ht, HashEntry new_entry) {
 	for (pos = 0; pos < entries; pos++) {
 		// If the item is not initiallized, then we terminate our search
 		// and we are ready to insert the entry
-		if (requested->bucket[pos]->tree_root == NULL) 
+		if (requested->bucket[pos]->item == NULL) 
 			break;
 		// If we reach the end of the node, the we check if there is another node in the list
 		if (pos == entries - 1) {
@@ -67,9 +73,9 @@ void hash_insert(HashTable ht, HashEntry new_entry) {
 	requested->bucket[pos] = new_entry;
 }
 
-HashEntry hash_search(HashTable ht, char* name) {
+HashEntry hash_search(HashTable ht, char* key) {
 	// Use the hash function to determine where our new entry is gonna go
-	int hash_id = ht->hash_function(name) % ht->size;
+	int hash_id = ht->hash_function(key) % ht->size;
 	HashNode requested = ht->array[hash_id];
 	int entries = ht->bucket_size / sizeof(struct hash_entry);
 	// Traverse all the records in this bucket until u find the desired record
@@ -78,7 +84,7 @@ HashEntry hash_search(HashTable ht, char* name) {
 	for (pos = 0; pos < entries; pos++) {
 		// If the item is not initiallized, then we terminate our search
 		// and return accordingly
-		if (strcmp(requested->bucket[pos]->name, name) == 0)
+		if (strcmp(requested->bucket[pos]->key, key) == 0)
 			return requested->bucket[pos];
 		// If we reach the end of the node, the we check if there is another node in the list
 		if (pos == entries - 1) {

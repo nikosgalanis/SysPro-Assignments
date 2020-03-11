@@ -2,6 +2,7 @@
     "files.associations": {
         "dates.h": "c",
         "string.h": "c",
-        "hashtable.h": "c"
+        "hashtable.h": "c",
+        "stdlib.h": "c"
     }
 }
