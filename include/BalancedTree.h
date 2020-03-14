@@ -30,3 +30,4 @@ TreeEntry create_tree_entry(Date date, Pointer assgn);
 TreeNode create_tree_node(TreeEntry value);
 Tree create_tree(CompareFunc compare, DestroyFunc destroy);
 void tree_insert(Tree tree, TreeEntry value);
+int total_nodes_grater_than(Tree tree, Pointer x);

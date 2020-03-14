@@ -4,27 +4,39 @@
 
 #include "GlobalStructures.h"
 
+//============= Hepful functions needed for the queries============//
+
+// Compare 2 tree nodes, depending on their date
+int icompare(Pointer first, Pointer second) {
+    TreeEntry entry1 = (TreeEntry)first;
+    TreeEntry entry2 = (TreeEntry)second;
+    return compare_dates(entry1->date, entry2->date);
+}
+
+// Print the hash table entry key, allong with the total entries in the dates tree
+void print_all(HashEntry entry, Date* d1, Date* d2) {
+	Tree tree = entry->item;
+	printf("%s %d\n", entry->key, tree->size);
+}
+
+// Print the hash table entry key, allong with entries on the date tree that are in the range (date1, date2)
+void print_specific(HashEntry entry, Date* d1, Date* d2) {
+    Tree tree = entry->item;
+    int g_than = total_nodes_grater_than(tree, d1) - total_nodes_grater_than(tree, d2);
+	printf("%s %d\n", entry->key, g_than);
+}
+
 void insertPatientRecord(char* info) {
     char delim[2] = " ";
-    char* query = strtok(info, delim);
+    // Use strtok_r to keep the rest of the string in order to initialize the patient, as it is given
+    // in the exaxt same order as before.
+    char* query = strtok_r(info, delim, &info);
     if (strcmp(query, "/insertPatientRecord")) {
         printf("Unexpected error occured during the query\n");
         return;
-    }    
-    char* id = strtok(NULL, delim);
-    char* first_name = strtok(NULL, delim);
-    char* last_name = strtok(NULL, delim);
-    char* disease = strtok(NULL, delim);
-    char* country = strtok(NULL, delim);
-    char* entry_date = strtok(NULL, delim);
-    char* exit_date = strtok(NULL, delim);
-    Date entryd = string_to_date(entry_date);
-    Date exitd = string_to_date(exit_date);
-
-    // Free the initial string so we do not have leaks
-    free(info); //TODO: Propably change
-    // Create and return the desired struct
-    Patient p = {id, first_name, last_name, disease, country, entryd, exitd};
+    }
+    // Create the patient record with the new string.
+    Patient p = create_patient(info);
 
     // The key for the balanced tree will be tha patient's entry date to the hospital
     Date tree_key = p.entry_date;
@@ -39,7 +51,7 @@ void insertPatientRecord(char* info) {
     }
     // If we do not find the entry, then we insert it, with an empty tree as a key
     else  {
-        Tree result_tree = create_tree(compare, free);
+        Tree result_tree = create_tree(icompare, free);
         HashEntry new_hash_entry = create_hash_entry(p.country, result_tree);
         hash_insert(countryHashTable, new_hash_entry);
     }
@@ -51,7 +63,7 @@ void insertPatientRecord(char* info) {
     }
     // If we do not find the entry, then we insert it, with an empty tree as a key
     else  {
-        Tree result_tree = create_tree(compare, free);
+        Tree result_tree = create_tree(icompare, free);
         HashEntry new_hash_entry = create_hash_entry(p.country, result_tree);
         hash_insert(countryHashTable, new_hash_entry);
     }
@@ -62,9 +74,37 @@ void insertPatientRecord(char* info) {
         HashEntry new_entry = create_hash_entry(p.id, &p);
         hash_insert(patients, new_entry);
     } else {
-        printf("Fatal error. Patient with id %s already exists. Terminating the monitor\n");
+        printf("Fatal error. Patient with id %s already exists. Terminating the monitor\n", p.id);
         //TODO: Free all memory
         exit(EXIT_FAILURE);
     }
+}
 
+void recordPatientExit(char* info) {
+    char delim[2] = " ";
+    // Use strtok_r to keep the rest of the string in order to initialize the patient, as it is given
+    // in the exaxt same order as before.
+    char* query = strtok(info, delim);
+    char* r_id = strtok(NULL, delim);
+    char* exit_d = strtok(NULL, delim);
+    Date exit_date = string_to_date(exit_d);
+
+    if (strcmp(query, "/recordPatientExit")) {
+        printf("Unexpected error occured during the query\n");
+        return;
+    }
+    HashEntry patient_entry = hash_search(patients, r_id);
+    if (patient_entry == NULL) {
+        printf("Patient with id %s not found.\n", r_id);
+        return;
+    }
+    // The patient record can be easily found in the patients ht, where a pointer to the record is kept
+    Patient* patient = (Patient*)patient_entry->item;
+    // Check of the patient has already exited the hospital
+    if (patient->exit_date.day != 0) {
+        // Update the desired info
+        patient->exit_date = exit_date;       
+    } else {
+        printf("The desired patient has already exited the hospital.\n");
+    }
 }

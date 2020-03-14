@@ -1,25 +1,28 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include "HashTable.h"
 #include <string.h>
 
 HashEntry create_hash_entry(char* key, Pointer item) {
 	HashEntry new_entry = malloc(sizeof(*new_entry));
-	new_entry->key = key; //TODO: Does this work?
+	new_entry->key = key; 
 	new_entry->item = item;
 
 	return new_entry;
 }
 
 HashNode create_hash_node(int bucket_size) {
-	HashNode new_node = malloc(sizeof(struct hash_node));
+	HashNode new_node = malloc(sizeof(*new_node));
 	// Create a bucket which contains "bucketsize" bytes
-	new_node->bucket = malloc(bucket_size); //TODO: change to somthing that fits exactly n
-	// initialize our entries to null //TODO: Maybe use an empty bool variable
-	for (int j = 0; j < bucket_size / sizeof(struct hash_entry); j++) {
-		new_node->bucket[0]->item = NULL;			
+	int n_buckets = bucket_size / sizeof(struct hash_entry);
+	new_node->bucket = malloc(n_buckets * sizeof(HashEntry));
+	// initialize our entries to null
+	for (int j = 0; j < n_buckets; j++) {
+		new_node->bucket[j] = NULL;			
 	}
 	// We are going to use that as an overflow list pointer for each bucket
 	new_node->next = NULL;
+	
 	return new_node;
 }
 
@@ -28,6 +31,11 @@ HashTable hash_create(int size, HashFunc hash_fn, int bucket_size) {
 	HashTable ht = malloc(sizeof(*ht));
 	// Hold the bucketsize, so that is a multiple of the size of the struct.
 	ht->bucket_size = (bucket_size / sizeof(struct hash_entry)) * sizeof(struct hash_entry);
+	if (bucket_size / sizeof(struct hash_entry) < 1) {
+		printf("Fatal error, bucketsize too small. Exiting the monitor\n");
+		//TODO: Free the memory 
+		exit(EXIT_FAILURE);
+	}
 	ht->array = malloc(size * sizeof(HashNode));
 	for (int i = 0; i < size; i++) {
 		ht->array[i] = create_hash_node(ht->bucket_size);
@@ -52,7 +60,7 @@ void hash_insert(HashTable ht, HashEntry new_entry) {
 	for (pos = 0; pos < entries; pos++) {
 		// If the item is not initiallized, then we terminate our search
 		// and we are ready to insert the entry
-		if (requested->bucket[pos]->item == NULL) 
+		if (requested->bucket[pos] == NULL) 
 			break;
 		// If we reach the end of the node, the we check if there is another node in the list
 		if (pos == entries - 1) {
@@ -64,8 +72,7 @@ void hash_insert(HashTable ht, HashEntry new_entry) {
 			else {
 				HashNode new_node = create_hash_node(ht->bucket_size);
 				requested->next = new_node;
-				requested = requested->next;
-
+				requested = new_node;
 			}
 			// Either way, we go back to the 0-th position on the bucket.
 			pos = 0;
@@ -82,12 +89,16 @@ HashEntry hash_search(HashTable ht, char* key) {
 	int entries = ht->bucket_size / sizeof(struct hash_entry);
 	// Traverse all the records in this bucket until u find the desired record
 	int pos;
-	// TODO: SOS, uninitialized strings, beware!
 	for (pos = 0; pos < entries; pos++) {
 		// If the item is not initiallized, then we terminate our search
 		// and return accordingly
-		if (strcmp(requested->bucket[pos]->key, key) == 0)
-			return requested->bucket[pos];
+		if (requested->bucket[pos] != NULL) {
+			if (strcmp(requested->bucket[pos]->key, key) == 0)
+				return requested->bucket[pos];
+		}
+		else {
+			return NULL;
+		}
 		// If we reach the end of the node, the we check if there is another node in the list
 		if (pos == entries - 1) {
 			// If there is, we go on to the next node
@@ -105,7 +116,7 @@ HashEntry hash_search(HashTable ht, char* key) {
 	return NULL;
 }
 
-void hash_traverse(HashTable ht, PrintFunc print) {
+void hash_traverse(HashTable ht, PrintFunc print, Pointer d1, Pointer d2) {
 	HashNode current;
 	int entries  = ht->bucket_size / sizeof(struct hash_entry);
 	for (int i = 0; i < ht->size; i++) {
@@ -113,7 +124,7 @@ void hash_traverse(HashTable ht, PrintFunc print) {
 		current = ht->array[i];
 		for (pos = 0; pos < entries; pos++) {
 			char* name = current->bucket[pos]->key;
-			print(current->bucket[pos]);
+			print(current->bucket[pos], d1, d2);
 			if (pos == entries - 1) {
 				// If there is, we go on to the next node
 				if (current->next != NULL) {

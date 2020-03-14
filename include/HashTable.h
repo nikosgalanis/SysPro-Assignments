@@ -10,12 +10,13 @@ struct hash_entry {
 
 typedef struct hash_entry* HashEntry;
 
+typedef struct hash_node* HashNode;
+
 struct hash_node {
 	HashEntry* bucket;
-	struct hash_node* next;	
+	HashNode next;	
 };
 
-typedef struct hash_node* HashNode;
 
 
 #define HASH_EOF (HashNode)0

@@ -19,8 +19,8 @@ Patient create_patient(char* str) {
     Date entry = string_to_date(entry_date);
     Date exit = string_to_date(exit_date);
 
-    // Free the initial string so we do not have leaks
-    free(str);
+    // // Free the initial string so we do not have leaks
+    // free(str);
     // Create and return the desired struct
     Patient new_patient = {id, first_name, last_name, disease, country, entry, exit};
     return new_patient;

@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include "BalancedTree.h"
 #include <string.h>
-
+#include <stdio.h>
 // Return the max value between 2 ints
 static int max(int a, int b) {
 	return (a > b) ? a : b ;
@@ -22,7 +22,7 @@ TreeNode create_tree_node(TreeEntry value) {
     TreeNode node = malloc(sizeof(*node));
 
     node->right = NULL; node->right = NULL;
-    node-> value = value;
+    node->value = value;
     node->height = 1; // Initially our height will be 1. We'll fix that later
 
     return node;
@@ -131,7 +131,24 @@ TreeNode insert_node_to_tree(Tree tree, TreeNode node, TreeEntry entry) {
 
 // Give the root of the tree, in order to insert a new entry to it.
 void tree_insert(Tree tree, TreeEntry value) {
-    tree->root = insert_node_to_tree(tree, tree->root, value);
-    tree->size++;
+    if (value != NULL) {
+        tree->root = insert_node_to_tree(tree, tree->root, value);
+        tree->size++;
+    }
 }
 
+int total_nodes_grater_than(Tree tree, Pointer x) {
+    return grater_than(tree->root, x, tree->compare);
+}
+
+int grater_than(TreeNode node, Pointer x, CompareFunc compare) {
+    int count = 0;
+    if (node != NULL) {
+        if (compare(x, node->value) < 0) {
+            grater_than(node->left, x, compare);
+            count++;
+        }
+        grater_than(node->right, x, compare);
+    }
+    return count;
+}
