@@ -35,3 +35,4 @@ HashEntry create_hash_entry(char* key, Pointer item);
 HashTable hash_create(int size, HashFunc hash_fn, int bucket_size);
 void hash_insert(HashTable ht, HashEntry new_entry);
 HashEntry hash_search(HashTable ht, char* name);
+void hash_traverse(HashTable ht, PrintFunc print, Pointer d1, Pointer d2);

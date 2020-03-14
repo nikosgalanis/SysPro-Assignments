@@ -21,7 +21,7 @@ TreeEntry create_tree_entry(Date date, Pointer assgn) {
 TreeNode create_tree_node(TreeEntry value) {
     TreeNode node = malloc(sizeof(*node));
 
-    node->right = NULL; node->right = NULL;
+    node->right = NULL; node->left = NULL;
     node->value = value;
     node->height = 1; // Initially our height will be 1. We'll fix that later
 

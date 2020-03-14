@@ -58,11 +58,14 @@ void parse_input (char* file, int num_countries, int num_diseases, int bucket_si
             Tree result_tree = country_search_result->item;
             tree_insert(result_tree, new_tree_entry);
         }
-        // If we do not find the entry, then we insert it, with an empty tree as a key
+        // If we do not find the entry, then we insert it, with a tree with only one node as a key
         else  {
             Tree result_tree = create_tree(compare, free);
             HashEntry new_hash_entry = create_hash_entry(p.country, result_tree);
             hash_insert(countryHashTable, new_hash_entry);
+            TreeEntry new_tree_entry = create_tree_entry(tree_key, &p);
+            tree_insert(result_tree, new_tree_entry);
+
         }
         // Same thing about the diseases hash table
         if(disease_search_result != NULL) {
@@ -75,6 +78,8 @@ void parse_input (char* file, int num_countries, int num_diseases, int bucket_si
             Tree result_tree = create_tree(compare, free);
             HashEntry new_hash_entry = create_hash_entry(p.disease, result_tree);
             hash_insert(diseaseHashTable, new_hash_entry);
+            TreeEntry new_tree_entry = create_tree_entry(tree_key, &p);
+            tree_insert(result_tree, new_tree_entry);
         }
         // Search for the patient in the patients ht. If a patient with the same id is found
         // terminate the program. Else, just insert the pointer to the patient record in the hash.

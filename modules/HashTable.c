@@ -123,7 +123,6 @@ void hash_traverse(HashTable ht, PrintFunc print, Pointer d1, Pointer d2) {
 		int pos = 0;
 		current = ht->array[i];
 		for (pos = 0; pos < entries; pos++) {
-			char* name = current->bucket[pos]->key;
 			print(current->bucket[pos], d1, d2);
 			if (pos == entries - 1) {
 				// If there is, we go on to the next node
