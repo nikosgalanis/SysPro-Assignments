@@ -36,7 +36,7 @@ int main(int argc, char const *argv[]) {
         exit(EXIT_FAILURE);
     }
     parse_input(in_file, country_hash_size, disease_hash_size, bucket_size);
-    // monitor_menu();
+    monitor_menu();
 
 
     exit(EXIT_SUCCESS);

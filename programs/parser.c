@@ -34,7 +34,7 @@ int nlines(FILE* input) {
 
 void parse_input (char* file, int num_countries, int num_diseases, int bucket_size){
     // Initialize the hash tables
-    printf("bsize %d\n", bucket_size);
+    printf("Collecting the data from the input file...\n");
     diseaseHashTable = hash_create(num_diseases, hash_strings, bucket_size);
     countryHashTable = hash_create(num_countries, hash_strings, bucket_size);
 
