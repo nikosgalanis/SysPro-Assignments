@@ -10,14 +10,11 @@ void monitor_menu() {
     char delim[2] = " ";
     printf("Enter a new query\n");
     while (fgets(input, 100, stdin) != NULL) {
-        printf("%s\n", input);
         char* instruction = strtok_r(input, delim, &input);
-        printf("[%s]\n", instruction);
         if (!strcmp(instruction, "/globalDiseaseStats")) {
             globalDiseaseStats(input);
         }
         else if(!strcmp(instruction, "/diseaseFrequency")) {
-            printf("laaaaa\n");
             diseaseFrequency(input);
         }
         else if(!strcmp(instruction, "/topk-Diseases")) {
@@ -41,5 +38,6 @@ void monitor_menu() {
         else {
             printf("Query not recognized. Choose one of the default options\n");
         }
+        printf("Enter a new query\n");
     }
 }

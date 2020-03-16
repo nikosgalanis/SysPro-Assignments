@@ -12,4 +12,4 @@ typedef struct patient {
     Date exit_date;
 } Patient;
 
-Patient create_patient(char* str);
+Patient* create_patient(char* str);

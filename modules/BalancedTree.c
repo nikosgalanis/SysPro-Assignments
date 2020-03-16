@@ -1,10 +1,11 @@
 #include <stdlib.h>
 #include "BalancedTree.h"
+#include "Patient.h"
 #include <string.h>
 #include <stdio.h>
 // Return the max value between 2 ints
 static int max(int a, int b) {
-	return (a > b) ? a : b ;
+	return (a > b) ? a : b;
 }
 
 // Create a new tree entry
@@ -81,16 +82,12 @@ TreeNode left_rotation(TreeNode node) {
 }
 
 TreeNode left_right_rotation(TreeNode node) {
-    TreeNode left = node->left;
-
-    left = left_rotation(left);
+    node->left = left_rotation(node->left);
     return right_rotation(node);
 }
 
 TreeNode right_left_rotation(TreeNode node) {
-    TreeNode right = node->right;
-
-    right = right_rotation(right);
+    node->right = right_rotation(node->right);
     return left_rotation(node);
 }
 
@@ -120,7 +117,7 @@ TreeNode insert_node_to_tree(Tree tree, TreeNode node, TreeEntry entry) {
     if (node == NULL) {
         return create_tree_node(entry);
     }
-    int result = tree->compare(node->value, entry);
+    int result = tree->compare(entry, node->value);
     if (result <= 0) {
         node->left = insert_node_to_tree(tree, node->left, entry);
     } else {
@@ -137,18 +134,66 @@ void tree_insert(Tree tree, TreeEntry value) {
     }
 }
 
-int total_nodes_grater_than(Tree tree, Pointer x) {
-    return grater_than(tree->root, x, tree->compare);
+int total_nodes_grater_than(Tree tree, Pointer x, ConditionFunc cond, char* cond_item) {
+    return grater_than(tree->root, x, tree->compare, cond, cond_item);
 }
 
-int grater_than(TreeNode node, Pointer x, CompareFunc compare) {
+int grater_than(TreeNode node, Pointer x, CompareFunc compare, ConditionFunc cond, char* cond_item) {
     int count = 0;
     if (node != NULL) {
-        if (compare(x, node->value) < 0) {
-            grater_than(node->left, x, compare);
-            count++;
+        if (compare(x, node->value) <= 0) {
+            count += grater_than(node->left, x, compare, cond, cond_item);
+            if (cond == NULL)
+                count++;
+            else {
+                if (cond(node->value, cond_item) == true)
+                    count++;
+            }
         }
-        grater_than(node->right, x, compare);
+        count += grater_than(node->right, x, compare, cond, cond_item);
     }
     return count;
 }
+
+void print_tree(TreeNode node) {
+    if (node != NULL) {
+        print_tree(node->left);
+        Date d = node->value->date;
+        printf("%d-%d-%d\n ", d.day, d.month, d.year);
+        TreeEntry entry = node->value;
+        Patient* patient = entry->assigned_patient;
+        printf("country is %s\n", patient->country);
+        print_tree(node->right);
+    }
+}
+
+void print2DUtil(TreeNode root, int space);
+
+void print2D(Tree tree) 
+{ 
+   // Pass initial space count as 0 
+   print2DUtil(tree->root, 0); 
+} 
+
+void print2DUtil(TreeNode root, int space) 
+{ 
+    // Base case 
+    if (root == NULL) 
+        return; 
+  
+    // Increase distance between levels 
+    space += 10; 
+  
+    // Process right child first 
+    print2DUtil(root->right, space); 
+  
+    // Print current node after space 
+    // count 
+    printf("\n"); 
+    for (int i = 10; i < space; i++) 
+        printf(" "); 
+    printf("%d-%d-%d\n", root->value->date.day, root->value->date.month, root->value->date.year); 
+  
+    // Process left child 
+    print2DUtil(root->left, space); 
+} 

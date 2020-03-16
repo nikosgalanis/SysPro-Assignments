@@ -4,11 +4,22 @@
 
 #include "Dates.h"
 
+bool empty_string(char* str) {
+    if (str == NULL)
+        return true;
+    for (int i = 0;; i++) {
+        if (str[i] != '\n' && str[i] != ' ' && str[i] != '\0' && str[i] != '-')
+            return false;
+        if (str[i] == '\0' || str[i] == '\0')
+            return true;
+    }
+}
+
 // Convert a DD-MM-YYYY string to an actual date
 Date string_to_date(char* d) {
     // We know that our string type is __identical__ to DD-MM-YYYY.
     // so, we are going to take advantage of it
-    if (!strcmp(d,"-\n")) {
+    if (empty_string(d)) {
         Date new_date = {.day = 0};
         return new_date;
     }

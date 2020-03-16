@@ -57,7 +57,7 @@ void hash_insert(HashTable ht, HashEntry new_entry) {
 	int entries = ht->bucket_size / sizeof(struct hash_entry);
 	// Traverse all the records in this bucket until u find an empty space
 	int pos;
-	for (pos = 0; pos < entries; pos++) {
+	for (pos = 0;; pos++) {
 		// If the item is not initiallized, then we terminate our search
 		// and we are ready to insert the entry
 		if (requested->bucket[pos] == NULL) 
@@ -75,11 +75,12 @@ void hash_insert(HashTable ht, HashEntry new_entry) {
 				requested = new_node;
 			}
 			// Either way, we go back to the 0-th position on the bucket.
-			pos = 0;
+			pos = -1;
 		}
 	}
 	// Insert the new entry in the correct position
 	requested->bucket[pos] = new_entry;
+	ht->items++;
 }
 
 HashEntry hash_search(HashTable ht, char* key) {
@@ -109,7 +110,7 @@ HashEntry hash_search(HashTable ht, char* key) {
 			else 
 				return NULL;
 			// Either way, we go back to the 0-th position on the bucket.
-			pos = 0;
+			pos = -1;
 		}
 	}
 	// For whatever reason we are here, something is wrong, so return NULL
@@ -122,18 +123,19 @@ void hash_traverse(HashTable ht, PrintFunc print, Pointer d1, Pointer d2) {
 	for (int i = 0; i < ht->size; i++) {
 		int pos = 0;
 		current = ht->array[i];
-		for (pos = 0; pos < entries; pos++) {
-			print(current->bucket[pos], d1, d2);
+		for (pos = 0;; pos++) {
+			if (current->bucket[pos] != NULL)
+				print(current->bucket[pos], d1, d2);
 			if (pos == entries - 1) {
 				// If there is, we go on to the next node
 				if (current->next != NULL) {
 					current = current->next;
 				}
 				// If there is not, then we've reached a dead-end, so we break
-				else 
+				else
 					break;
 				// Either way, we go back to the 0-th position on the bucket.
-				pos = 0;
+				pos = -1;
 			}
 		}
 	}
