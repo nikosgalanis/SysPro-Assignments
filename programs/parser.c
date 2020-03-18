@@ -35,8 +35,8 @@ int nlines(FILE* input) {
 void parse_input (char* file, int num_countries, int num_diseases, int bucket_size){
     // Initialize the hash tables, with destroy functions to delete the trees, as the items are going to be bsts
     printf("Collecting the data from the input file...\n");
-    diseaseHashTable = hash_create(num_diseases, hash_strings, bucket_size, tree_destroy);
-    countryHashTable = hash_create(num_countries, hash_strings, bucket_size, tree_destroy);
+    diseaseHashTable = hash_create(num_diseases, hash_strings, bucket_size, balanced_tree_destroy);
+    countryHashTable = hash_create(num_countries, hash_strings, bucket_size, balanced_tree_destroy);
     // Open the input file //TODO:Close it
     FILE* input = fopen("input/large.txt", "r"); //TODO: Change to real file
     int lines = nlines(input);
@@ -62,35 +62,35 @@ void parse_input (char* file, int num_countries, int num_diseases, int bucket_si
         // If we find the entry in the hash table, then we update
         // its tree, by inserting the new patient
         if(country_search_result != NULL) {
-            TreeEntry new_tree_entry = create_tree_entry(tree_key, p);
-            Tree result_tree = country_search_result->item;
-            tree_insert(result_tree, new_tree_entry);
+            BalancedTreeEntry new_tree_entry = create_balanced_tree_entry(tree_key, p);
+            BalancedTree result_tree = country_search_result->item;
+            balanced_tree_insert(result_tree, new_tree_entry);
         }
         // If we do not find the entry, then we insert it, with a tree with only one node as a key
         else  {
             // Create a new tree and store its 1st date
             // Attention: We pass NULL as destroy func, because we do not want the patients, neither 
             // the dates to be freed, cause we have 2 trees possibly pointing in the same node
-            Tree result_tree = create_tree(compare, NULL);
+            BalancedTree result_tree = create_balanced_tree(compare, NULL);
             HashEntry new_hash_entry = create_hash_entry(p->country, result_tree);
             hash_insert(countryHashTable, new_hash_entry);
-            TreeEntry new_tree_entry = create_tree_entry(tree_key, p);
-            tree_insert(result_tree, new_tree_entry);
+            BalancedTreeEntry new_tree_entry = create_balanced_tree_entry(tree_key, p);
+            balanced_tree_insert(result_tree, new_tree_entry);
 
         }
         // Same thing about the diseases hash table
         if(disease_search_result != NULL) {
-            TreeEntry new_tree_entry = create_tree_entry(tree_key, p);
-            Tree result_tree = disease_search_result->item;
-            tree_insert(result_tree, new_tree_entry);
+            BalancedTreeEntry new_tree_entry = create_balanced_tree_entry(tree_key, p);
+            BalancedTree result_tree = disease_search_result->item;
+            balanced_tree_insert(result_tree, new_tree_entry);
         }
         // If we do not find the entry, then we insert it, with an empty tree as a key
         else  {
-            Tree result_tree = create_tree(compare, NULL);
+            BalancedTree result_tree = create_balanced_tree(compare, NULL);
             HashEntry new_hash_entry = create_hash_entry(p->disease, result_tree);
             hash_insert(diseaseHashTable, new_hash_entry);
-            TreeEntry new_tree_entry = create_tree_entry(tree_key, p);
-            tree_insert(result_tree, new_tree_entry);
+            BalancedTreeEntry new_tree_entry = create_balanced_tree_entry(tree_key, p);
+            balanced_tree_insert(result_tree, new_tree_entry);
         }
         // Search for the patient in the patients ht. If a patient with the same id is found
         // terminate the program. Else, just insert the pointer to the patient record in the hash.

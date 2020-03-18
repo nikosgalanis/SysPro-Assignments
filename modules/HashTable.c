@@ -14,11 +14,11 @@ HashEntry create_hash_entry(char* key, Pointer item) {
 HashNode create_hash_node(int bucket_size) {
 	HashNode new_node = malloc(sizeof(*new_node));
 	// Create a bucket which contains "bucketsize" bytes
-	int n_buckets = bucket_size / sizeof(struct hash_entry);
+	int n_buckets = (bucket_size - sizeof(Pointer)) / sizeof(struct hash_entry);
 	new_node->bucket = malloc(n_buckets * sizeof(HashEntry));
 	// initialize our entries to null
 	for (int j = 0; j < n_buckets; j++) {
-		new_node->bucket[j] = NULL;			
+		new_node->bucket[j] = EMPTY_ENTRY;			
 	}
 	// We are going to use that as an overflow list pointer for each bucket
 	new_node->next = NULL;
@@ -30,7 +30,7 @@ HashNode create_hash_node(int bucket_size) {
 HashTable hash_create(int size, HashFunc hash_fn, int bucket_size, DestroyFunc destroy) {
 	HashTable ht = malloc(sizeof(*ht));
 	// Hold the bucketsize, so that is a multiple of the size of the struct.
-	ht->bucket_size = (bucket_size / sizeof(struct hash_entry)) * sizeof(struct hash_entry);
+	ht->bucket_size = bucket_size;
 	if (bucket_size / sizeof(struct hash_entry) < 1) {
 		printf("Fatal error, bucketsize too small. Exiting the monitor\n");
 		//TODO: Free the memory 
@@ -55,13 +55,13 @@ void hash_insert(HashTable ht, HashEntry new_entry) {
 	// Use the hash function to determine where our new entry is gonna go
 	int hash_id = ht->hash_function(new_entry->key) % ht->size;
 	HashNode requested = ht->array[hash_id];
-	int entries = ht->bucket_size / sizeof(struct hash_entry);
+	int entries = (ht->bucket_size - sizeof(Pointer)) / sizeof(struct hash_entry);
 	// Traverse all the records in this bucket until u find an empty space
 	int pos;
 	for (pos = 0;; pos++) {
 		// If the item is not initiallized, then we terminate our search
 		// and we are ready to insert the entry
-		if (requested->bucket[pos] == NULL) 
+		if (requested->bucket[pos] == EMPTY_ENTRY) 
 			break;
 		// If we reach the end of the node, the we check if there is another node in the list
 		if (pos == entries - 1) {
@@ -88,7 +88,7 @@ HashEntry hash_search(HashTable ht, char* key) {
 	// Use the hash function to determine where our new entry is gonna go
 	int hash_id = ht->hash_function(key) % ht->size;
 	HashNode requested = ht->array[hash_id];
-	int entries = ht->bucket_size / sizeof(struct hash_entry);
+	int entries = (ht->bucket_size - sizeof(Pointer)) / sizeof(struct hash_entry);
 	// Traverse all the records in this bucket until u find the desired record
 	int pos;
 	for (pos = 0; pos < entries; pos++) {
@@ -120,7 +120,7 @@ HashEntry hash_search(HashTable ht, char* key) {
 
 void hash_traverse(HashTable ht, PrintFunc print, Pointer d1, Pointer d2) {
 	HashNode current;
-	int entries  = ht->bucket_size / sizeof(struct hash_entry);
+	int entries = (ht->bucket_size - sizeof(Pointer)) / sizeof(struct hash_entry);
 	for (int i = 0; i < ht->size; i++) {
 		int pos = 0;
 		current = ht->array[i];
@@ -145,29 +145,29 @@ void hash_traverse(HashTable ht, PrintFunc print, Pointer d1, Pointer d2) {
 }
 
 void hash_destroy(HashTable ht) {
-		HashNode current;
-		int entries  = ht->bucket_size / sizeof(struct hash_entry);
-		for (int i = 0; i < ht->size; i++) {
-			int pos = 0;
-			current = ht->array[i];
-			for (pos = 0;; pos++) {
-				if (current->bucket[pos] != NULL && ht->destroy_items != NULL)
-					ht->destroy_items(current->bucket[pos]->item);
-				if (pos == entries - 1) {
-					// If there is, we go on to the next node
-					if (current->next != NULL) {
-						current = current->next;
-						//TODO: possibble leak at the ->next element
-					}
-					// If there is not, then we've reached a dead-end, so we break
-					else
-						break;
-					// Either way, we go back to the 0-th position on the bucket.
-					pos = -1;
+	HashNode current;
+	int entries = (ht->bucket_size - sizeof(Pointer)) / sizeof(struct hash_entry);
+	for (int i = 0; i < ht->size; i++) {
+		int pos = 0;
+		current = ht->array[i];
+		for (pos = 0;; pos++) {
+			if (current->bucket[pos] != NULL && ht->destroy_items != NULL)
+				ht->destroy_items(current->bucket[pos]);
+			if (pos == entries - 1) {
+				// If there is, we go on to the next node
+				if (current->next != NULL) {
+					current = current->next;
+					//TODO: possibble leak at the ->next element
 				}
+				// If there is not, then we've reached a dead-end, so we break
+				else
+					break;
+				// Either way, we go back to the 0-th position on the bucket.
+				pos = -1;
 			}
-			free(ht->array[i]);
 		}
-		free(ht->array);
-		free(ht);
+		free(ht->array[i]);
+	}
+	free(ht->array);
+	free(ht);
 }

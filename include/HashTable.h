@@ -10,6 +10,8 @@ struct hash_entry {
 
 typedef struct hash_entry* HashEntry;
 
+#define EMPTY_ENTRY (HashEntry) 1
+
 typedef struct hash_node* HashNode;
 
 struct hash_node {

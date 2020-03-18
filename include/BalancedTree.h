@@ -1,38 +1,23 @@
 #pragma once
-#include "common_types.h"
+#include "BinaryTree.h"
 #include "Dates.h"
 
-typedef struct tree_node* TreeNode;
-typedef struct tree_entry* TreeEntry;
-typedef struct tree* Tree;
 // Our entries to our bst will be of this form
 struct tree_entry {
     Date date;
     Pointer assigned_patient;
 };
 
-// Our nodes have 2 child nodes, their value, and ther height in the tree
-// in order for it to remain balanced
-struct tree_node {
-    TreeNode left, right;
-    TreeEntry value;
-    uint height; 
-};
+typedef BinaryTree BalancedTree;
+typedef TreeEntry BalancedTreeEntry;
 
-struct tree {
-    TreeNode root;
-    int size;
-    CompareFunc compare;
-    DestroyFunc destroy;
-};
-
-TreeEntry create_tree_entry(Date date, Pointer assgn);
-TreeNode create_tree_node(TreeEntry value);
-Tree create_tree(CompareFunc compare, DestroyFunc destroy);
-void tree_insert(Tree tree, TreeEntry value);
-int total_nodes_grater_than(Tree tree, Pointer x, ConditionFunc cond, char* cond_item);
+BalancedTreeEntry create_balanced_tree_entry(Date date, Pointer assgn);
+TreeNode create_tree_node(BalancedTreeEntry value);
+BalancedTree create_balanced_tree(CompareFunc compare, DestroyFunc destroy);
+void balanced_tree_insert(BalancedTree tree, BalancedTreeEntry value);
+int total_nodes_grater_than(BalancedTree tree, Pointer x, ConditionFunc cond, char* cond_item);
 int grater_than(TreeNode node, Pointer x, CompareFunc compare, ConditionFunc cond, char* cond_item);
-int tree_traverse(Tree tree, ConditionFunc cond);
+int balanced_tree_traverse(BalancedTree tree, ConditionFunc cond);
 int node_traverse(TreeNode node, ConditionFunc cond);
-void tree_destroy(Pointer tree);
+void balanced_tree_destroy(Pointer tree);
 void destroy_node(TreeNode node, DestroyFunc destroy);

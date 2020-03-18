@@ -9,8 +9,8 @@ static int max(int a, int b) {
 }
 
 // Create a new tree entry
-TreeEntry create_tree_entry(Date date, Pointer assgn) {
-    TreeEntry entry = malloc(sizeof(*entry));
+BalancedTreeEntry create_balanced_tree_entry(Date date, Pointer assgn) {
+    BalancedTreeEntry entry = malloc(sizeof(*entry));
 
     entry->date = date;
     entry->assigned_patient = assgn;
@@ -19,25 +19,13 @@ TreeEntry create_tree_entry(Date date, Pointer assgn) {
 }
 
 // Create a new tree node
-TreeNode create_tree_node(TreeEntry value) {
-    TreeNode node = malloc(sizeof(*node));
-
-    node->right = NULL; node->left = NULL;
-    node->value = value;
-    node->height = 1; // Initially our height will be 1. We'll fix that later
-
-    return node;
+TreeNode create_tree_node(BalancedTreeEntry value) {
+    return create_binary_node(value);
 }
 
 // Create an empty balanced tree
-Tree create_tree(CompareFunc compare, DestroyFunc destroy) {
-    Tree tree = malloc(sizeof(*tree));
-    tree->root = NULL;
-    tree->size = 0;
-    tree->compare = compare;
-    tree->destroy = destroy;
-
-    return tree;
+BalancedTree create_balanced_tree(CompareFunc compare, DestroyFunc destroy) {
+    return create_binary_tree(compare, destroy);
 }
 
 static int node_height(TreeNode node) {
@@ -113,21 +101,13 @@ TreeNode maintain_property(TreeNode node) {
     }
 }
 
-TreeNode insert_node_to_tree(Tree tree, TreeNode node, TreeEntry entry) {
-    if (node == NULL) {
-        return create_tree_node(entry);
-    }
-    int result = tree->compare(entry, node->value);
-    if (result <= 0) {
-        node->left = insert_node_to_tree(tree, node->left, entry);
-    } else {
-        node->right = insert_node_to_tree(tree, node->right, entry);
-    }
+TreeNode insert_node_to_tree(Tree tree, TreeNode node, BalancedTreeEntry entry) {
+    node = insert_binary_node(node, tree->compare, entry);
     return maintain_property(node);
 }
 
 // Give the root of the tree, in order to insert a new entry to it.
-void tree_insert(Tree tree, TreeEntry value) {
+void balanced_tree_insert(BalancedTree tree, BalancedTreeEntry value) {
     if (value != NULL) {
         tree->root = insert_node_to_tree(tree, tree->root, value);
         tree->size++;
@@ -135,7 +115,7 @@ void tree_insert(Tree tree, TreeEntry value) {
 }
 
 // Find all the nodes in a tree that are grater than a const, and satisfy a given condition
-int total_nodes_grater_than(Tree tree, Pointer x, ConditionFunc cond, char* cond_item) {
+int total_nodes_grater_than(BalancedTree tree, Pointer x, ConditionFunc cond, char* cond_item) {
     return grater_than(tree->root, x, tree->compare, cond, cond_item);
 }
 
@@ -157,7 +137,7 @@ int grater_than(TreeNode node, Pointer x, CompareFunc compare, ConditionFunc con
     return count;
 }
 
-int tree_traverse(Tree tree, ConditionFunc cond) {
+int balanced_tree_traverse(BalancedTree tree, ConditionFunc cond) {
     return node_traverse(tree->root, cond);
 }
 
@@ -173,18 +153,9 @@ int node_traverse(TreeNode node, ConditionFunc cond) {
     return count;
 }
 
-void tree_destroy(Pointer t) {
-    Tree tree = (Tree)t;
-     destroy_node(tree->root, tree->destroy);
+void balanced_tree_destroy(Pointer t) {
+    BalancedTree tree = (BalancedTree)t;
+    destroy_node(tree->root, tree->destroy);
     free(tree);
 }
 
-void destroy_node(TreeNode node, DestroyFunc destroy) {
-    if (node != NULL) {
-        destroy_node(node->left, destroy);
-        if (destroy != NULL)
-            destroy(node->value);
-        destroy_node(node->right, destroy);
-    }
-    free(node);
-}

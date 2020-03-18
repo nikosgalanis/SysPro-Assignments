@@ -8,8 +8,8 @@
 
 // Compare 2 tree nodes, depending on their date
 int icompare(Pointer first, Pointer second) {
-    TreeEntry entry1 = (TreeEntry)first;
-    TreeEntry entry2 = (TreeEntry)second;
+    BalancedTreeEntry entry1 = (BalancedTreeEntry)first;
+    BalancedTreeEntry entry2 = (BalancedTreeEntry)second;
     return compare_dates(entry1->date, entry2->date);
 }
 
@@ -40,7 +40,7 @@ void print_specific(Pointer ent, Pointer date1, Pointer date2, Pointer dummy) {
 
 bool check_same_country(Pointer ent, Pointer count) {
     char* country = (char*) count;
-    TreeEntry entry = (TreeEntry)ent;
+    BalancedTreeEntry entry = (BalancedTreeEntry)ent;
     if (entry!= NULL) {
         Patient* patient = entry->assigned_patient;
         if (!strcmp(patient->country, country))
@@ -49,11 +49,12 @@ bool check_same_country(Pointer ent, Pointer count) {
             return false;
     } else {
         printf("Disease not found\n");
+        return false;
     }
 }
 
 bool check_if_hospitalized(Pointer ent, Pointer dummy) {
-    TreeEntry entry = (TreeEntry)ent;
+    BalancedTreeEntry entry = (BalancedTreeEntry)ent;
     if (entry != NULL) {
         Patient* patient = entry->assigned_patient;
         if (check_if_null_date(patient->exit_date))
@@ -62,6 +63,7 @@ bool check_if_hospitalized(Pointer ent, Pointer dummy) {
             return false;
     } else {
         printf("Disease not found\n");
+        return false;
     }
 }
 
@@ -69,8 +71,8 @@ void print_hospitalized(Pointer ent, Pointer dummy1, Pointer dummy2, Pointer dis
     HashEntry entry = (HashEntry)ent;
     if (entry != NULL) {
         char* disease = (char*)dis;    
-        Tree p = entry->item;
-        int result = tree_traverse(p, check_if_hospitalized);
+        BalancedTree p = entry->item;
+        int result = balanced_tree_traverse(p, check_if_hospitalized);
         printf("%d patients are currently being hospitalized with disease %s\n", result, disease);
     } else {
         printf("Disease not found\n");
@@ -109,11 +111,11 @@ void diseaseFrequency(char* info) {
     char* virus = strtok(info, delim);
     char* arg2 = strtok(NULL, delim);
     char* arg3 = strtok(NULL, delim);
-    char* arg4 = strtok(NULL, delim);
+    Date d1 = string_to_date(arg2);
+    Date d2 = string_to_date(arg3);
+    char* country = strtok(NULL, delim);
     // If there are 3 arguments, we suppose that a country is not given
-    if (arg4 == NULL) {
-        Date d1 = string_to_date(arg2);
-        Date d2 = string_to_date(arg3);
+    if (country == NULL) {
         HashEntry entry = hash_search(diseaseHashTable, virus);
         if (entry == NULL) {
             printf("Desired disease not found\n");
@@ -123,14 +125,11 @@ void diseaseFrequency(char* info) {
             printf("For the virus %s, %d infected were found between the 2 given dates\n", virus, g_than);
         }
     } else {
-        char* country = arg2;
-        Date d1 = string_to_date(arg3);
-        Date d2 = string_to_date(arg4);
         HashEntry entry = hash_search(diseaseHashTable, virus);
         if (entry == NULL) {
             printf("Desired disease not found\n");
         } else {
-            Tree tree = entry->item;
+            BalancedTree tree = entry->item;
             int g_than = total_nodes_grater_than(tree, &d1, check_same_country, country) - total_nodes_grater_than(tree, &d2, check_same_country, country);
             printf("For the virus %s, %d infected were found between the 2 given dates in %s\n", virus, g_than, country);
         }
@@ -156,25 +155,25 @@ void insertPatientRecord(char* info) {
     // If we find the entry in the hash table, then we update
     // its tree, by inserting the new patient
     if(country_search_result != NULL) {
-        TreeEntry new_tree_entry = create_tree_entry(tree_key, p);
-        Tree result_tree = country_search_result->item;
-        tree_insert(result_tree, new_tree_entry);
+        BalancedTreeEntry new_tree_entry = create_balanced_tree_entry(tree_key, p);
+        BalancedTree result_tree = country_search_result->item;
+        balanced_tree_insert(result_tree, new_tree_entry);
     }
     // If we do not find the entry, then we insert it, with an empty tree as a key
     else  {
-        Tree result_tree = create_tree(icompare, free);
+        BalancedTree result_tree = create_balanced_tree(icompare, free);
         HashEntry new_hash_entry = create_hash_entry(p->country, result_tree);
         hash_insert(countryHashTable, new_hash_entry);
     }
     // Same thing about the diseases hash table
     if(disease_search_result != NULL) {
-        TreeEntry new_tree_entry = create_tree_entry(tree_key, p);
+        BalancedTreeEntry new_tree_entry = create_balanced_tree_entry(tree_key, p);
         Tree result_tree = disease_search_result->item;
-        tree_insert(result_tree, new_tree_entry);
+        balanced_tree_insert(result_tree, new_tree_entry);
     }
     // If we do not find the entry, then we insert it, with an empty tree as a key
     else  {
-        Tree result_tree = create_tree(icompare, free);
+        BalancedTree result_tree = create_balanced_tree(icompare, free);
         HashEntry new_hash_entry = create_hash_entry(p->country, result_tree);
         hash_insert(countryHashTable, new_hash_entry);
     }
@@ -231,8 +230,8 @@ void numCurrentPatients(char* info) {
         if (entry == NULL) {
             printf("Desired disease not found\n");
         } else {
-            Tree p = entry->item;
-            int result = tree_traverse(p, check_if_hospitalized);
+            BalancedTree p = entry->item;
+            int result = balanced_tree_traverse(p, check_if_hospitalized);
             printf("%d patients are currently being hospitalized with disease %s\n", result, virus);
         }
     }
