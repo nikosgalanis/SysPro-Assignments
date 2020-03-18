@@ -27,12 +27,14 @@ struct hash_table {
 	int items;
 	int bucket_size;
 	HashFunc hash_function;
+	DestroyFunc destroy_items;
 };
 
 typedef struct hash_table* HashTable;
 
 HashEntry create_hash_entry(char* key, Pointer item);
-HashTable hash_create(int size, HashFunc hash_fn, int bucket_size);
+HashTable hash_create(int size, HashFunc hash_fn, int bucket_size, DestroyFunc destroy);
 void hash_insert(HashTable ht, HashEntry new_entry);
 HashEntry hash_search(HashTable ht, char* name);
 void hash_traverse(HashTable ht, PrintFunc print, Pointer d1, Pointer d2);
+void hash_destroy(HashTable ht);

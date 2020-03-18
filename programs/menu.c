@@ -30,10 +30,11 @@ void monitor_menu() {
             recordPatientExit(input);
         }
         else if(!strcmp(instruction, "/numCurrentPatients")) {
-            // numCurrentPatients(input);
+            numCurrentPatients(input);
         }
         else if(!strcmp(instruction, "/exit")) {
-            // exit_monitor();
+            exit_monitor();
+            exit(EXIT_SUCCESS);
         }
         else {
             printf("Query not recognized. Choose one of the default options\n");

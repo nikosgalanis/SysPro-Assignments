@@ -134,10 +134,12 @@ void tree_insert(Tree tree, TreeEntry value) {
     }
 }
 
+// Find all the nodes in a tree that are grater than a const, and satisfy a given condition
 int total_nodes_grater_than(Tree tree, Pointer x, ConditionFunc cond, char* cond_item) {
     return grater_than(tree->root, x, tree->compare, cond, cond_item);
 }
 
+// Recursive function to find all the nodes in a tree that are grater than a const
 int grater_than(TreeNode node, Pointer x, CompareFunc compare, ConditionFunc cond, char* cond_item) {
     int count = 0;
     if (node != NULL) {
@@ -155,45 +157,34 @@ int grater_than(TreeNode node, Pointer x, CompareFunc compare, ConditionFunc con
     return count;
 }
 
-void print_tree(TreeNode node) {
-    if (node != NULL) {
-        print_tree(node->left);
-        Date d = node->value->date;
-        printf("%d-%d-%d\n ", d.day, d.month, d.year);
-        TreeEntry entry = node->value;
-        Patient* patient = entry->assigned_patient;
-        printf("country is %s\n", patient->country);
-        print_tree(node->right);
-    }
+int tree_traverse(Tree tree, ConditionFunc cond) {
+    return node_traverse(tree->root, cond);
 }
 
-void print2DUtil(TreeNode root, int space);
+int node_traverse(TreeNode node, ConditionFunc cond) {
+    int count = 0;
+    if (node != NULL) {
+        count += node_traverse(node->left, cond);
+        if (cond(node->value, NULL) == true) {
+            count++;
+        }
+        count += node_traverse(node->right, cond);
+    }
+    return count;
+}
 
-void print2D(Tree tree) 
-{ 
-   // Pass initial space count as 0 
-   print2DUtil(tree->root, 0); 
-} 
+void tree_destroy(Pointer t) {
+    Tree tree = (Tree)t;
+     destroy_node(tree->root, tree->destroy);
+    free(tree);
+}
 
-void print2DUtil(TreeNode root, int space) 
-{ 
-    // Base case 
-    if (root == NULL) 
-        return; 
-  
-    // Increase distance between levels 
-    space += 10; 
-  
-    // Process right child first 
-    print2DUtil(root->right, space); 
-  
-    // Print current node after space 
-    // count 
-    printf("\n"); 
-    for (int i = 10; i < space; i++) 
-        printf(" "); 
-    printf("%d-%d-%d\n", root->value->date.day, root->value->date.month, root->value->date.year); 
-  
-    // Process left child 
-    print2DUtil(root->left, space); 
-} 
+void destroy_node(TreeNode node, DestroyFunc destroy) {
+    if (node != NULL) {
+        destroy_node(node->left, destroy);
+        if (destroy != NULL)
+            destroy(node->value);
+        destroy_node(node->right, destroy);
+    }
+    free(node);
+}

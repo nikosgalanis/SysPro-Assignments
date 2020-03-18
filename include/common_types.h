@@ -10,7 +10,7 @@ typedef unsigned int uint;
 typedef int (*CompareFunc)(Pointer a, Pointer b);
 typedef void (*DestroyFunc)(Pointer value);
 typedef uint (*HashFunc)(Pointer);
-typedef void (*PrintFunc)(Pointer, Pointer, Pointer);
+typedef void (*PrintFunc)(Pointer, Pointer, Pointer, Pointer);
 typedef bool (*ConditionFunc)(Pointer, Pointer);
 
 

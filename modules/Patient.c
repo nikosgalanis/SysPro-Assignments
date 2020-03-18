@@ -31,3 +31,8 @@ Patient* create_patient(char* str) {
     // Return the desired struct
     return p;
 }
+
+void destroy_patient(Pointer p) {
+    Patient* patient = (Patient*)p;
+    free(patient);
+}

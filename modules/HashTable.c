@@ -27,7 +27,7 @@ HashNode create_hash_node(int bucket_size) {
 }
 
 // Create an empty hash table, with pre-determined size
-HashTable hash_create(int size, HashFunc hash_fn, int bucket_size) {
+HashTable hash_create(int size, HashFunc hash_fn, int bucket_size, DestroyFunc destroy) {
 	HashTable ht = malloc(sizeof(*ht));
 	// Hold the bucketsize, so that is a multiple of the size of the struct.
 	ht->bucket_size = (bucket_size / sizeof(struct hash_entry)) * sizeof(struct hash_entry);
@@ -46,6 +46,7 @@ HashTable hash_create(int size, HashFunc hash_fn, int bucket_size) {
 	ht->items = 0;
 	// We deferentiate the hts, by passing each hash function into the struct
 	ht->hash_function = hash_fn;
+	ht->destroy_items = destroy;
 	return ht;
 }
 
@@ -124,8 +125,10 @@ void hash_traverse(HashTable ht, PrintFunc print, Pointer d1, Pointer d2) {
 		int pos = 0;
 		current = ht->array[i];
 		for (pos = 0;; pos++) {
-			if (current->bucket[pos] != NULL)
-				print(current->bucket[pos], d1, d2);
+			if (current->bucket[pos] != NULL) {
+				char* str = current->bucket[pos]->key;
+				print(current->bucket[pos], d1, d2, str);
+			}
 			if (pos == entries - 1) {
 				// If there is, we go on to the next node
 				if (current->next != NULL) {
@@ -139,4 +142,32 @@ void hash_traverse(HashTable ht, PrintFunc print, Pointer d1, Pointer d2) {
 			}
 		}
 	}
+}
+
+void hash_destroy(HashTable ht) {
+		HashNode current;
+		int entries  = ht->bucket_size / sizeof(struct hash_entry);
+		for (int i = 0; i < ht->size; i++) {
+			int pos = 0;
+			current = ht->array[i];
+			for (pos = 0;; pos++) {
+				if (current->bucket[pos] != NULL && ht->destroy_items != NULL)
+					ht->destroy_items(current->bucket[pos]->item);
+				if (pos == entries - 1) {
+					// If there is, we go on to the next node
+					if (current->next != NULL) {
+						current = current->next;
+						//TODO: possibble leak at the ->next element
+					}
+					// If there is not, then we've reached a dead-end, so we break
+					else
+						break;
+					// Either way, we go back to the 0-th position on the bucket.
+					pos = -1;
+				}
+			}
+			free(ht->array[i]);
+		}
+		free(ht->array);
+		free(ht);
 }
