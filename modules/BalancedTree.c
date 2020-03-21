@@ -154,6 +154,18 @@ int node_cond_traverse(TreeNode node, ConditionFunc cond) {
     return count;
 }
 
+void balanced_tree_traverse(BalancedTree tree, VisitFunc visit, Pointer c, Pointer d1, Pointer d2, Pointer p) {
+    node_traverse(tree->root, visit, c, d1, d2, p);
+}
+
+void node_traverse(TreeNode node, VisitFunc visit, Pointer c, Pointer d1, Pointer d2, Pointer p) {
+    if (node != NULL) {
+        node_traverse(node->left, visit, c, d1, d2, p);
+        visit(node->value, c, d1, d2, p);
+        node_traverse(node->right, visit, c, d1, d2, p);
+    }
+}
+
 // Destroy a balanced tree, by freeing all the memory allocated
 void balanced_tree_destroy(Pointer t) {
     BalancedTree tree = (BalancedTree)t;

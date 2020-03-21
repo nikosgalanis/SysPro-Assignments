@@ -8,6 +8,9 @@
 #include "BalancedTree.h"
 #include "HeapUsingCBT.h"
 
+// Our global pointers to stroe some sizes
+int num_diseases, num_countries;
+
 // Our global pointers to store the hash tables
 HashTable diseaseHashTable;
 HashTable countryHashTable;

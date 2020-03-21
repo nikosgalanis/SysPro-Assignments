@@ -15,5 +15,5 @@ typedef void (*VisitFunc)(Pointer, Pointer, Pointer, Pointer, Pointer);
 typedef bool (*ConditionFunc)(Pointer, Pointer);
 
 
-void parse_input (char* file, int num_countries, int num_diseases, int bucket_size);
+void parse_input (char* file, int bucket_size);
 void monitor_menu();

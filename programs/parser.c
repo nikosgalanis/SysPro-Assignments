@@ -32,7 +32,7 @@ int nlines(FILE* input) {
     return lines;
 }
 
-void parse_input (char* file, int num_countries, int num_diseases, int bucket_size){
+void parse_input (char* file, int bucket_size){
     // Initialize the hash tables, with destroy functions to delete the trees, as the items are going to be bsts
     printf("Collecting the data from the input file...\n");
     diseaseHashTable = hash_create(num_diseases, hash_strings, bucket_size, balanced_tree_destroy);

@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include "HashTable.h"
 #include <string.h>
+
+// Special pointer to indicate an empty entry
 Pointer empty = &empty;
 
 HashEntry create_hash_entry(char* key, Pointer item) {

@@ -21,5 +21,7 @@ int total_nodes_grater_than(BalancedTree tree, Pointer x, ConditionFunc cond, ch
 int grater_than(TreeNode node, Pointer x, CompareFunc compare, ConditionFunc cond, char* cond_item);
 int balanced_tree_cond_traverse(BalancedTree tree, ConditionFunc cond);
 int node_cond_traverse(TreeNode node, ConditionFunc cond);
+void balanced_tree_traverse(BalancedTree tree, VisitFunc visit, Pointer c, Pointer d1, Pointer d2, Pointer p);
+void node_traverse(TreeNode node, VisitFunc visit, Pointer c, Pointer d1, Pointer d2, Pointer p);
 void balanced_tree_destroy(Pointer tree);
 void destroy_node(TreeNode node, DestroyFunc destroy);

@@ -6,6 +6,15 @@
 
 //============= Hepful functions needed for the queries============//
 
+
+uint hash_string(void* key) {
+	char* str = (char*)key;
+    int h = 0, a = 33;
+	for (; *str != '\0'; str++)
+		h = (a * h + *str);
+	return h;
+}
+
 // Compare 2 tree nodes, depending on their date
 int icompare(Pointer first, Pointer second) {
     BalancedTreeEntry entry1 = (BalancedTreeEntry)first;
@@ -38,6 +47,102 @@ void print_specific(Pointer ent, Pointer date1, Pointer date2, Pointer dummy1, P
     }
 }
 
+void visit_country_with_dates(Pointer t, Pointer count, Pointer date1, Pointer date2, Pointer h) {
+    BalancedTreeEntry entry = (BalancedTreeEntry)t;
+    Date* d1 = (Date*)date1;
+    Date* d2 = (Date*)date2;
+    char* country = (char*)count;
+    HashTable ht = (HashTable)h;
+    Patient* p = entry->assigned_patient;
+    if (p != NULL && entry != NULL) {
+        if (!strcmp(p->country, country) && (compare_dates(*d1, p->entry_date) < 0) && (compare_dates(p->entry_date, *d2) < 0)) { //TODO: triple check it
+            HashEntry hash_res = hash_search(ht, p->disease);
+            if (hash_res != NULL) {
+                int* times = hash_res->item;
+                (*times)++;
+                hash_res->item = times;
+            } else {
+                int* times = malloc(sizeof(int));
+                *times = 1;
+                hash_insert(ht, p->disease, times);
+            }
+        }
+    }
+}
+
+void visit_country_without_dates(Pointer t, Pointer count, Pointer dummy1, Pointer dummy2, Pointer h) {
+    BalancedTreeEntry entry = (BalancedTreeEntry)t;
+    char* country = (char*)count;
+    HashTable ht = (HashTable)h;
+    Patient* p = entry->assigned_patient;
+    if (p != NULL && entry != NULL) {
+        if (!strcmp(p->country, country)) {
+            HashEntry hash_res = hash_search(ht, p->disease);
+            if (hash_res != NULL) {
+                int* times = hash_res->item;
+                (*times)++;
+                hash_res->item = times;
+            } else {
+                int* times = malloc(sizeof(int));
+                *times = 1;
+                hash_insert(ht, p->disease, times);
+            }
+        }
+    }
+}
+
+void visit_disease_with_dates(Pointer t, Pointer dis, Pointer date1, Pointer date2, Pointer h) {
+    BalancedTreeEntry entry = (BalancedTreeEntry)t;
+    Date* d1 = (Date*)date1;
+    Date* d2 = (Date*)date2;
+    char* disease = (char*)dis;
+    HashTable ht = (HashTable)h;
+    Patient* p = entry->assigned_patient;
+    if (p != NULL && entry != NULL) {
+        if (!strcmp(p->disease, disease) && (compare_dates(*d1, p->entry_date) < 0) && (compare_dates(p->entry_date, *d2) < 0)) { //TODO: triple check it
+            HashEntry hash_res = hash_search(ht, p->disease);
+            if (hash_res != NULL) {
+                int* times = hash_res->item;
+                (*times)++;
+                hash_res->item = times;
+            } else {
+                int* times = malloc(sizeof(int));
+                *times = 1;
+                hash_insert(ht, p->country, times);
+            }
+        }
+    }
+}
+
+void visit_disease_without_dates(Pointer t, Pointer dis, Pointer dummy1, Pointer dummy2, Pointer h) {
+    BalancedTreeEntry entry = (BalancedTreeEntry)t;
+    char* disease = (char*)dis;
+    HashTable ht = (HashTable)h;
+    Patient* p = entry->assigned_patient;
+    if (p != NULL && entry != NULL) {
+        if (!strcmp(p->disease, disease)) {
+            HashEntry hash_res = hash_search(ht, p->disease);
+            if (hash_res != NULL) {
+                int* times = hash_res->item;
+                (*times)++;
+                hash_res->item = times;
+            } else {
+                int* times = malloc(sizeof(int));
+                *times = 1;
+                hash_insert(ht, p->country, times);
+            }
+        }
+    }
+}
+
+
+void insert_entry_to_heap(Pointer t, Pointer dummy1, Pointer dummy2, Pointer dummy3, Pointer h) {
+    HashEntry entry = (HashEntry)t;
+    Heap heap = (Heap)h;
+    int* priority = (int*)entry->item;
+    heap_insert(heap, *priority, entry->key);
+}
+
 bool check_same_country(Pointer ent, Pointer count) {
     char* country = (char*) count;
     BalancedTreeEntry entry = (BalancedTreeEntry)ent;
@@ -67,34 +172,7 @@ bool check_if_hospitalized(Pointer ent, Pointer dummy) {
     }
 }
 
-// Print the hash table entry key, allong with the total entries in the dates tree
-void get_topk_countries_no_dates(Pointer ent, Pointer date1, Pointer date2, Pointer dummy, Pointer h) {
-    Heap heap = (Heap)h;
-    HashEntry entry = (HashEntry)ent;
-    if (entry != NULL) {
-        Tree tree = entry->item;
-        heap_insert(heap, tree->size, entry->key);
-    } else {
-        printf("Disease not found\n");
-    }
-}
-
-// Print the hash table entry key, allong with entries on the date tree that are in the range (date1, date2)
-void get_topk_countries_with_dates(Pointer ent, Pointer date1, Pointer date2, Pointer dummy, Pointer h) {
-    HashEntry entry = (HashEntry)ent;
-    Heap heap = (Heap)h;
-    if (entry != NULL) {
-        Date* d1 = (Date*)date1; 
-        Date* d2 = (Date*)date2; 
-        Tree tree = entry->item;
-        int g_than = total_nodes_grater_than(tree, d1, NULL, NULL) - total_nodes_grater_than(tree, d2, NULL, NULL);
-        heap_insert(heap, g_than, entry->key);
-    } else {
-        printf("Disease not found\n");
-    }
-}
-
-void print_hospitalized(Pointer ent, Pointer dummy1, Pointer dummy2, Pointer dis) {
+void print_hospitalized(Pointer ent, Pointer dummy1, Pointer dummy2, Pointer dis, Pointer dummy3) {
     HashEntry entry = (HashEntry)ent;
     if (entry != NULL) {
         char* disease = (char*)dis;    
@@ -162,34 +240,100 @@ void diseaseFrequency(char* info) {
     }
 }
 
-void topk_diseases(char* info) {
+void topk_Diseases(char* info) {
     char delim[2] = " ";
     int k = atoi(strtok(info, delim));
     char* country = strtok(NULL, delim);
-    char* day1 = strtok(info, delim);
+    char* day1 = strtok(NULL, delim);
     char* day2 = strtok(NULL, delim);
     Date d1 = string_to_date(day1);
     Date d2 = string_to_date(day2);
-    Heap heap = create_heap(free);
+    HashTable diseases_ht = hash_create(num_diseases, hash_string, 100, free);
     // If a begin date is provided, check for a day 2.
     if (check_if_null_date(d1) == true) {
         if (check_if_null_date(d2) == true) {
-            HashEntry country_entry = hash_search(countryHashTable, country);
-            printf("For the country %s, the top %d diseases are:\n", country, k);
-            for (int i = 0; i < k; i++) {
+            BalancedTree tree = hash_search(countryHashTable, country)->item;
+            balanced_tree_traverse(tree, visit_country_without_dates, country, NULL, NULL, diseases_ht);
+            Heap heap = create_heap(free);
+            hash_traverse(diseases_ht, insert_entry_to_heap, NULL, NULL, heap);
 
+            printf("For the country %s, the top %d diseases are:\n", country, k);
+            for (int i = 0; i < k && i < diseases_ht->items; i++) {
+                HeapEntry ent = pop(heap);
+                printf("%s with %d infected\n", ent->key, ent->priority);
+                free(ent);
             }
+            destroy_heap(heap);
         } else {
-            printf("You must provide 2 dates. Use as /globalDiseaseStats [date1 date2]\n");
+            printf("You must provide 2 dates. Use as /topk-Diseases k country [date1 date2]\n");
         }
     } else {
         if (check_if_null_date(d2) == false) {
-            hash_traverse(diseaseHashTable, get_topk_countries_with_dates, &d1, &d2, heap);
+            BalancedTree tree = hash_search(countryHashTable, country)->item;
+            balanced_tree_traverse(tree, visit_country_with_dates, country, &d1, &d2, diseases_ht);
+            Heap heap = create_heap(free);
+            hash_traverse(diseases_ht, insert_entry_to_heap, NULL, NULL, heap);
+
+            printf("For the country %s, the top %d diseases for the desired dates are:\n", country, k);
+            for (int i = 0; i < k && i < diseases_ht->items; i++) {
+                HeapEntry ent = pop(heap);
+                printf("%s with %d infected\n", ent->key, ent->priority);
+                free(ent);
+            }
+            destroy_heap(heap);
         } else {
-            printf("You must provide 2 dates. Use as /globalDiseaseStats [date1 date2]\n");
+            printf("You must provide 2 dates. Use as /topk-Diseases k country [date1 date2]\n");
         }
     } 
 }
+
+void topk_Countries(char* info) {
+    char delim[2] = " ";
+    int k = atoi(strtok(info, delim));
+    char* disease = strtok(NULL, delim);
+    char* day1 = strtok(NULL, delim);
+    char* day2 = strtok(NULL, delim);
+    Date d1 = string_to_date(day1);
+    Date d2 = string_to_date(day2);
+    HashTable countries_ht = hash_create(num_diseases, hash_string, 100, free);
+    // If a begin date is provided, check for a day 2.
+    if (check_if_null_date(d1) == true) {
+        if (check_if_null_date(d2) == true) {
+            BalancedTree tree = hash_search(diseaseHashTable, disease)->item;
+            balanced_tree_traverse(tree, visit_disease_without_dates, disease, NULL, NULL, countries_ht);
+            Heap heap = create_heap(free);
+            hash_traverse(countries_ht, insert_entry_to_heap, NULL, NULL, heap);
+
+            printf("For the disease %s, the top %d countries are:\n", disease, k);
+            for (int i = 0; i < k && i < countries_ht->items; i++) {
+                HeapEntry ent = pop(heap);
+                printf("%s with %d infected\n", ent->key, ent->priority);
+                free(ent);
+            }
+            destroy_heap(heap);
+        } else {
+            printf("You must provide 2 dates. Use as /topk-Countries k disease [date1 date2]\n");
+        }
+    } else {
+        if (check_if_null_date(d2) == false) {
+            BalancedTree tree = hash_search(countryHashTable, disease)->item;
+            balanced_tree_traverse(tree, visit_disease_with_dates, disease, &d1, &d2, countries_ht);
+            Heap heap = create_heap(free);
+            hash_traverse(countries_ht, insert_entry_to_heap, NULL, NULL, heap);
+
+            printf("For the diseases %s, the top %d countries for the desired dates are:\n", disease, k);
+            for (int i = 0; i < k && i < countries_ht->items; i++) {
+                HeapEntry ent = pop(heap);
+                printf("%s with %d infected\n", ent->key, ent->priority);
+                free(ent);
+            }
+            destroy_heap(heap);
+        } else {
+            printf("You must provide 2 dates. Use as /topk-Countries k disease [date1 date2]\n");
+        }
+    } 
+}
+
 
 void insertPatientRecord(char* info) {
     char delim[2] = " ";

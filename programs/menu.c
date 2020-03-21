@@ -18,10 +18,10 @@ void monitor_menu() {
             diseaseFrequency(input);
         }
         else if(!strcmp(instruction, "/topk-Diseases")) {
-            // topk_Diseases(input);
+            topk_Diseases(input);
         }
         else if(!strcmp(instruction, "/topk-Countries")) {
-            // topk_Countries(input);
+            topk_Countries(input);
         }
         else if(!strcmp(instruction, "/insertPatientRecord")) {
             insertPatientRecord(input);
