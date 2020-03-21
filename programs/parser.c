@@ -72,7 +72,7 @@ void parse_input (char* file, int bucket_size){
             // Attention: We pass NULL as destroy func, because we do not want the patients, neither 
             // the dates to be freed, cause we have 2 trees possibly pointing in the same node
             BalancedTree result_tree = create_balanced_tree(compare, NULL);
-            hash_insert(countryHashTable,p->country, result_tree);
+            hash_insert(countryHashTable, p->country, result_tree);
             BalancedTreeEntry new_tree_entry = create_balanced_tree_entry(tree_key, p);
             balanced_tree_insert(result_tree, new_tree_entry);
 

@@ -55,7 +55,7 @@ void visit_country_with_dates(Pointer t, Pointer count, Pointer date1, Pointer d
     HashTable ht = (HashTable)h;
     Patient* p = entry->assigned_patient;
     if (p != NULL && entry != NULL) {
-        if (!strcmp(p->country, country) && (compare_dates(*d1, p->entry_date) < 0) && (compare_dates(p->entry_date, *d2) < 0)) { //TODO: triple check it
+        if (!strcmp(p->country, country) && (compare_dates(*d1, p->entry_date) < 0) && (compare_dates(p->entry_date, *d2) < 0)) {
             HashEntry hash_res = hash_search(ht, p->disease);
             if (hash_res != NULL) {
                 int* times = hash_res->item;
@@ -100,7 +100,7 @@ void visit_disease_with_dates(Pointer t, Pointer dis, Pointer date1, Pointer dat
     Patient* p = entry->assigned_patient;
     if (p != NULL && entry != NULL) {
         if (!strcmp(p->disease, disease) && (compare_dates(*d1, p->entry_date) < 0) && (compare_dates(p->entry_date, *d2) < 0)) { //TODO: triple check it
-            HashEntry hash_res = hash_search(ht, p->disease);
+            HashEntry hash_res = hash_search(ht, p->country);
             if (hash_res != NULL) {
                 int* times = hash_res->item;
                 (*times)++;
@@ -121,7 +121,7 @@ void visit_disease_without_dates(Pointer t, Pointer dis, Pointer dummy1, Pointer
     Patient* p = entry->assigned_patient;
     if (p != NULL && entry != NULL) {
         if (!strcmp(p->disease, disease)) {
-            HashEntry hash_res = hash_search(ht, p->disease);
+            HashEntry hash_res = hash_search(ht, p->country);
             if (hash_res != NULL) {
                 int* times = hash_res->item;
                 (*times)++;
@@ -316,7 +316,7 @@ void topk_Countries(char* info) {
         }
     } else {
         if (check_if_null_date(d2) == false) {
-            BalancedTree tree = hash_search(countryHashTable, disease)->item;
+            BalancedTree tree = hash_search(diseaseHashTable, disease)->item;
             balanced_tree_traverse(tree, visit_disease_with_dates, disease, &d1, &d2, countries_ht);
             Heap heap = create_heap(free);
             hash_traverse(countries_ht, insert_entry_to_heap, NULL, NULL, heap);

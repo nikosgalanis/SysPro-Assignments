@@ -39,6 +39,6 @@ void monitor_menu() {
         else {
             printf("Query not recognized. Choose one of the default options\n");
         }
-        printf("Enter a new query\n");
+        printf("\nEnter a new query\n");
     }
 }
