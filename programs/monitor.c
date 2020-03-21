@@ -63,13 +63,12 @@ int main(int argc, char const *argv[]) {
 // }
 
 // int main(void) {
-//     Heap heap = create_heap(NULL);
-//     for (int i = 0; i < 1000; i++) {
-//         heap_insert(heap, rand()%10000, "lala");
-//     }
-//     for (int i = 1; i < 1001; i++) {
-//         HeapEntry h = pop(heap);
-//         printf("%d\n", h->priority);
-//     }
+//     HashTable ht = hash_create(100, ihash_strings, 50, free);
+//     hash_insert(ht, "lala", NULL);
+//     hash_insert(ht, "ldsala", NULL);
+//     hash_insert(ht, "lalasda", NULL);
+//     hash_insert(ht, "lalad", NULL);
+//     hash_insert(ht, "lalaaaa", NULL);
 
+//     hash_destroy(ht);
 // }

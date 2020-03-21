@@ -72,8 +72,7 @@ void parse_input (char* file, int num_countries, int num_diseases, int bucket_si
             // Attention: We pass NULL as destroy func, because we do not want the patients, neither 
             // the dates to be freed, cause we have 2 trees possibly pointing in the same node
             BalancedTree result_tree = create_balanced_tree(compare, NULL);
-            HashEntry new_hash_entry = create_hash_entry(p->country, result_tree);
-            hash_insert(countryHashTable, new_hash_entry);
+            hash_insert(countryHashTable,p->country, result_tree);
             BalancedTreeEntry new_tree_entry = create_balanced_tree_entry(tree_key, p);
             balanced_tree_insert(result_tree, new_tree_entry);
 
@@ -87,8 +86,7 @@ void parse_input (char* file, int num_countries, int num_diseases, int bucket_si
         // If we do not find the entry, then we insert it, with an empty tree as a key
         else  {
             BalancedTree result_tree = create_balanced_tree(compare, NULL);
-            HashEntry new_hash_entry = create_hash_entry(p->disease, result_tree);
-            hash_insert(diseaseHashTable, new_hash_entry);
+            hash_insert(diseaseHashTable, p->disease, result_tree);
             BalancedTreeEntry new_tree_entry = create_balanced_tree_entry(tree_key, p);
             balanced_tree_insert(result_tree, new_tree_entry);
         }
@@ -96,8 +94,7 @@ void parse_input (char* file, int num_countries, int num_diseases, int bucket_si
         // terminate the program. Else, just insert the pointer to the patient record in the hash.
         HashEntry patient_entry = hash_search(patients, p->id);
         if (patient_entry == NULL) {
-            HashEntry new_entry = create_hash_entry(p->id, p);
-            hash_insert(patients, new_entry);
+            hash_insert(patients, p->id, p);
         } else {
             printf("Fatal error. Patient with id %s already exists. Terminating the monitor\n", p->id);
             //TODO: Free all memory

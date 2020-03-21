@@ -189,3 +189,10 @@ HeapEntry pop(Heap heap) {
     // return the item with the biggest priority that we've collected
     return to_return;
 }
+
+void destroy_heap(Heap heap) {
+    while (heap->size != 0) {
+        HeapEntry entry = pop(heap);
+        free(entry);
+    }
+}

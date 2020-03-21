@@ -137,19 +137,19 @@ int grater_than(TreeNode node, Pointer x, CompareFunc compare, ConditionFunc con
 }
 
 // Traverse a balanced tree, bt recursively calling node_traverse
-int balanced_tree_traverse(BalancedTree tree, ConditionFunc cond) {
-    return node_traverse(tree->root, cond);
+int balanced_tree_cond_traverse(BalancedTree tree, ConditionFunc cond) {
+    return node_cond_traverse(tree->root, cond);
 }
 
 // Return how many nodes satisfy the condition fuction passed to the func.
-int node_traverse(TreeNode node, ConditionFunc cond) {
+int node_cond_traverse(TreeNode node, ConditionFunc cond) {
     int count = 0;
     if (node != NULL) {
-        count += node_traverse(node->left, cond);
+        count += node_cond_traverse(node->left, cond);
         if (cond(node->value, NULL) == true) {
             count++;
         }
-        count += node_traverse(node->right, cond);
+        count += node_cond_traverse(node->right, cond);
     }
     return count;
 }

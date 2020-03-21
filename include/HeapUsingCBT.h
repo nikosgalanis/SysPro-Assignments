@@ -39,3 +39,4 @@ void heapify_down(Heap heap, BTNode node);
 void heap_insert(Heap heap, int priority, char* key);
 HeapNode get_nth_node(Heap heap, int i);
 HeapEntry pop(Heap heap);
+void destroy_heap(Heap heap);

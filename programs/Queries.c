@@ -99,7 +99,7 @@ void print_hospitalized(Pointer ent, Pointer dummy1, Pointer dummy2, Pointer dis
     if (entry != NULL) {
         char* disease = (char*)dis;    
         BalancedTree p = entry->item;
-        int result = balanced_tree_traverse(p, check_if_hospitalized);
+        int result = balanced_tree_cond_traverse(p, check_if_hospitalized);
         printf("%d patients are currently being hospitalized with disease %s\n", result, disease);
     } else {
         printf("Disease not found\n");
@@ -217,8 +217,7 @@ void insertPatientRecord(char* info) {
     // If we do not find the entry, then we insert it, with an empty tree as a key
     else  {
         BalancedTree result_tree = create_balanced_tree(icompare, free);
-        HashEntry new_hash_entry = create_hash_entry(p->country, result_tree);
-        hash_insert(countryHashTable, new_hash_entry);
+        hash_insert(countryHashTable, p->country, result_tree);
     }
     // Same thing about the diseases hash table
     if(disease_search_result != NULL) {
@@ -229,15 +228,13 @@ void insertPatientRecord(char* info) {
     // If we do not find the entry, then we insert it, with an empty tree as a key
     else  {
         BalancedTree result_tree = create_balanced_tree(icompare, free);
-        HashEntry new_hash_entry = create_hash_entry(p->country, result_tree);
-        hash_insert(countryHashTable, new_hash_entry);
+        hash_insert(countryHashTable, p->country, result_tree);
     }
     // Search for the patient in the patients ht. If a patient with the same id is found
     // terminate the program. Else, just insert the pointer to the patient record in the hash.
     HashEntry patient_entry = hash_search(patients, p->id);
     if (patient_entry == NULL) {
-        HashEntry new_entry = create_hash_entry(p->id, p);
-        hash_insert(patients, new_entry);
+        hash_insert(patients, p->id, p);
     } else {
         printf("Fatal error. Patient with id %s already exists. Terminating the monitor\n", p->id);
         //TODO: Free all memory
@@ -286,7 +283,7 @@ void numCurrentPatients(char* info) {
             printf("Desired disease not found\n");
         } else {
             BalancedTree p = entry->item;
-            int result = balanced_tree_traverse(p, check_if_hospitalized);
+            int result = balanced_tree_cond_traverse(p, check_if_hospitalized);
             printf("%d patients are currently being hospitalized with disease %s\n", result, virus);
         }
     }
@@ -294,18 +291,18 @@ void numCurrentPatients(char* info) {
 
 void exit_monitor(void) {
     // free the hash tables
-    hash_destroy(diseaseHashTable);
-    hash_destroy(countryHashTable);
-    hash_destroy(patients);
+    // hash_destroy(diseaseHashTable);
+    // hash_destroy(countryHashTable);
+    // hash_destroy(patients);
     // // and the pointers to them
     // free(diseaseHashTable);
     // free(countryHashTable);
     // free(patients);
     
-    // free the strings
-    for (int i = 0; i < lines; i++) {
-        free(all_strings_from_file[i]);
-    }
+    // // free the strings
+    // for (int i = 0; i < lines; i++) {
+    //     free(all_strings_from_file[i]);
+    // }
     // // and the pointer to their array
     // free(all_strings_from_file);
 }

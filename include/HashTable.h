@@ -26,6 +26,7 @@ struct hash_table {
 	int size;
 	int items;
 	int bucket_size;
+	int bucket_max_entries;
 	HashFunc hash_function;
 	DestroyFunc destroy_items;
 };
@@ -34,7 +35,7 @@ typedef struct hash_table* HashTable;
 
 HashEntry create_hash_entry(char* key, Pointer item);
 HashTable hash_create(int size, HashFunc hash_fn, int bucket_size, DestroyFunc destroy);
-void hash_insert(HashTable ht, HashEntry new_entry);
+void hash_insert(HashTable ht, char* key, Pointer item);
 HashEntry hash_search(HashTable ht, char* name);
 void hash_traverse(HashTable ht, VisitFunc print, Pointer d1, Pointer d2, Pointer p);
 void hash_destroy(HashTable ht);
