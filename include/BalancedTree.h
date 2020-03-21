@@ -2,11 +2,13 @@
 #include "BinaryTree.h"
 #include "Dates.h"
 
+
 // Our entries to our bst will be of this form
 struct tree_entry {
     Date date;
     Pointer assigned_patient;
 };
+typedef struct tree_entry* TreeEntry;
 
 typedef BinaryTree BalancedTree;
 typedef TreeEntry BalancedTreeEntry;

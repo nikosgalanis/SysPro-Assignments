@@ -6,6 +6,7 @@
 #include "Dates.h"
 #include "HashTable.h"
 #include "BalancedTree.h"
+#include "HeapUsingCBT.h"
 
 // Our global pointers to store the hash tables
 HashTable diseaseHashTable;

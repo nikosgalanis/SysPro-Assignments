@@ -10,8 +10,6 @@ struct hash_entry {
 
 typedef struct hash_entry* HashEntry;
 
-#define EMPTY_ENTRY (HashEntry) 1
-
 typedef struct hash_node* HashNode;
 
 struct hash_node {
@@ -38,5 +36,5 @@ HashEntry create_hash_entry(char* key, Pointer item);
 HashTable hash_create(int size, HashFunc hash_fn, int bucket_size, DestroyFunc destroy);
 void hash_insert(HashTable ht, HashEntry new_entry);
 HashEntry hash_search(HashTable ht, char* name);
-void hash_traverse(HashTable ht, PrintFunc print, Pointer d1, Pointer d2);
+void hash_traverse(HashTable ht, VisitFunc print, Pointer d1, Pointer d2, Pointer p);
 void hash_destroy(HashTable ht);

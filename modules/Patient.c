@@ -7,6 +7,7 @@
 // Given a string, create a new patient record
 Patient* create_patient(char* str) {
     Patient* p = malloc(sizeof(*p));
+    assert(p != NULL);
     // Our delimiter will be the space character
     char delim[2] = " ";
     
@@ -32,6 +33,7 @@ Patient* create_patient(char* str) {
     return p;
 }
 
+// Destroy a patient, in order to free the allocated memory
 void destroy_patient(Pointer p) {
     Patient* patient = (Patient*)p;
     free(patient);

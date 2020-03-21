@@ -2,6 +2,14 @@
 
 #include "TreeTypes.h"
 
+typedef struct bs_tree_node* TreeNode;
+
+struct bs_tree_node {
+    TreeNode left, right;
+    Pointer value;
+    uint height; 
+};
+
 typedef Tree BinaryTree;
 
 TreeNode create_binary_node(Pointer item);

@@ -11,7 +11,7 @@ static int max(int a, int b) {
 // Create a new tree entry
 BalancedTreeEntry create_balanced_tree_entry(Date date, Pointer assgn) {
     BalancedTreeEntry entry = malloc(sizeof(*entry));
-
+    assert(entry != NULL);
     entry->date = date;
     entry->assigned_patient = assgn;
 
@@ -28,20 +28,20 @@ BalancedTree create_balanced_tree(CompareFunc compare, DestroyFunc destroy) {
     return create_binary_tree(compare, destroy);
 }
 
-static int node_height(TreeNode node) {
+int node_height(TreeNode node) {
     return node != NULL ? node->height : 0;
 }
 
 // Update the node height
-static void update_node_height(TreeNode node) {
+void update_node_height(TreeNode node) {
 	node->height = 1 + max(node_height(node->left), node_height(node->right));
 }
 
 // Return the difference of the heights of the left & right subtree
-static int node_balance(TreeNode node) {
+int node_balance(TreeNode node) {
 	return node_height(node->left) - node_height(node->right);
 }
-//====Implementation of the 4 esential tree rotations====//
+//========Implementation of the 4 esential tree rotations=========//
 
 TreeNode right_rotation(TreeNode node) {
     TreeNode left = node->left;
@@ -108,10 +108,9 @@ TreeNode insert_node_to_tree(Tree tree, TreeNode node, BalancedTreeEntry entry) 
 
 // Give the root of the tree, in order to insert a new entry to it.
 void balanced_tree_insert(BalancedTree tree, BalancedTreeEntry value) {
-    if (value != NULL) {
-        tree->root = insert_node_to_tree(tree, tree->root, value);
-        tree->size++;
-    }
+    assert(value != NULL);
+    tree->root = insert_node_to_tree(tree, tree->root, value);
+    tree->size++;
 }
 
 // Find all the nodes in a tree that are grater than a const, and satisfy a given condition
@@ -137,10 +136,12 @@ int grater_than(TreeNode node, Pointer x, CompareFunc compare, ConditionFunc con
     return count;
 }
 
+// Traverse a balanced tree, bt recursively calling node_traverse
 int balanced_tree_traverse(BalancedTree tree, ConditionFunc cond) {
     return node_traverse(tree->root, cond);
 }
 
+// Return how many nodes satisfy the condition fuction passed to the func.
 int node_traverse(TreeNode node, ConditionFunc cond) {
     int count = 0;
     if (node != NULL) {
@@ -153,6 +154,7 @@ int node_traverse(TreeNode node, ConditionFunc cond) {
     return count;
 }
 
+// Destroy a balanced tree, by freeing all the memory allocated
 void balanced_tree_destroy(Pointer t) {
     BalancedTree tree = (BalancedTree)t;
     destroy_node(tree->root, tree->destroy);
