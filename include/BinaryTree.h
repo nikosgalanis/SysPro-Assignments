@@ -5,9 +5,9 @@
 typedef struct bs_tree_node* TreeNode;
 
 struct bs_tree_node {
-    TreeNode left, right;
-    Pointer value;
-    uint height; 
+	TreeNode left, right;
+	Pointer value;
+	uint height; 
 };
 
 typedef Tree BinaryTree;

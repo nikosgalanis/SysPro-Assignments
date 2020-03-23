@@ -5,8 +5,8 @@
 
 // Our entries to our bst will be of this form
 struct tree_entry {
-    Date date;
-    Pointer assigned_patient;
+	Date date;
+	Pointer assigned_patient;
 };
 typedef struct tree_entry* TreeEntry;
 

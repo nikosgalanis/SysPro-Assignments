@@ -6,10 +6,10 @@
 // in order for it to remain balanced
 
 struct tree {
-    Pointer root;
-    int size;
-    CompareFunc compare;
-    DestroyFunc destroy;
+	Pointer root;
+	int size;
+	CompareFunc compare;
+	DestroyFunc destroy;
 };
 
 typedef struct tree* Tree;

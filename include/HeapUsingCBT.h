@@ -3,16 +3,16 @@
 #include "TreeTypes.h"
 
 struct binary_tree_entry {
-    char* key;
-    int priority;
+	char* key;
+	int priority;
 };
 
 typedef struct binary_tree_entry* BTEntry;
 typedef struct binary_tree_node* BTNode;
 
 struct binary_tree_node {
-    BTNode left, right, parent;
-    BTEntry value;
+	BTNode left, right, parent;
+	BTEntry value;
 };
 // A Complete binary tree node, is just a node
 typedef BTNode CBTreeNode;
