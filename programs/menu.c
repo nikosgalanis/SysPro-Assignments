@@ -6,35 +6,36 @@
 #include "Queries.h"
 
 void monitor_menu() {
-    char* input = malloc(STRING_SIZE * sizeof(char));
+    char input[STRING_SIZE];
     char delim[3] = " \n";
     printf("Enter a new query\n");
     while (fgets(input, STRING_SIZE, stdin) != NULL) {
-        char* instruction = strtok_r(input, " \n", &input);
+        char* instruction = strtok(input, delim);
+        char* info = strtok(NULL, "\n");
         if (!strcmp(instruction, "/globalDiseaseStats")) {
-            globalDiseaseStats(input);
+            globalDiseaseStats(info);
         }
         else if(!strcmp(instruction, "/diseaseFrequency")) {
-            diseaseFrequency(input);
+            diseaseFrequency(info);
         }
         else if(!strcmp(instruction, "/topk-Diseases")) {
-            topk_Diseases(input);
+            topk_Diseases(info);
         }
         else if(!strcmp(instruction, "/topk-Countries")) {
-            topk_Countries(input);
+            topk_Countries(info);
         }
         else if(!strcmp(instruction, "/insertPatientRecord")) {
-            insertPatientRecord(input);
+            insertPatientRecord(info);
         }
         else if(!strcmp(instruction, "/recordPatientExit")) {
-            recordPatientExit(input);
+            recordPatientExit(info);
         }
         else if(!strcmp(instruction, "/numCurrentPatients")) {
-            numCurrentPatients(input);
+            numCurrentPatients(info);
         }
         else if(!strcmp(instruction, "/exit")) {
             exit_monitor();
-            exit(EXIT_SUCCESS);
+            return;
         }
         else {
             printf("Query not recognized. Choose one of the default options\n");

@@ -7,6 +7,7 @@
 #include "HashTable.h"
 #include "BalancedTree.h"
 #include "HeapUsingCBT.h"
+#include "Queries.h"
 
 // Our global pointers to stroe some sizes
 int num_diseases, num_countries;

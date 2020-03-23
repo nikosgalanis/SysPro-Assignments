@@ -5,8 +5,8 @@
 #include "GlobalStructures.h"
 
 int main(int argc, char const *argv[]) {
-    char* in_file = malloc(strlen(argv[4]) * sizeof(char));
     int bucket_size;
+    char* in_file;
     if (argc < 9 || argc > 9) {
         printf("Use as ./diseaseMonitor -p patientRecordsFile –h1 diseaseHashtableNumOfEntries –h2 countryHashtableNumOfEntries –b bucketSize\n");
         exit(EXIT_FAILURE);

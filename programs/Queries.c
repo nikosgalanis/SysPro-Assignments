@@ -201,7 +201,7 @@ void print_hospitalized(Pointer ent, Pointer dummy1, Pointer dummy2, Pointer dis
 }
 
 
-//===============Queries for the monitor========================//
+//=========================================Queries for the monitor======================================================//
 
 void globalDiseaseStats(char* info) {
     // Analyse the user input
@@ -356,14 +356,8 @@ void topk_Countries(char* info) {
 
 
 void insertPatientRecord(char* info) {
-    char delim[3] = " \n";
     // Use strtok_r to keep the rest of the string in order to initialize the patient, as it is given
     // in the exaxt same order as before.
-    char* query = strtok_r(info, delim, &info);
-    if (strcmp(query, "/insertPatientRecord ")) {
-        printf("Unexpected error occured during the query\n");
-        return;
-    }
     printf("%s\n", info);
     // store the string
         all_strings_from_file[lines++] = info;
@@ -371,6 +365,7 @@ void insertPatientRecord(char* info) {
         Patient* p = create_patient(info);
         // The key for the balanced tree will be tha patient's entry date to the hospital
         Date tree_key = p->entry_date;
+        printf("%s\n", p->disease);
         HashEntry disease_search_result = hash_search(diseaseHashTable, p->disease);
         HashEntry country_search_result = hash_search(countryHashTable, p->country);
         // If we find the entry in the hash table, then we update
@@ -411,7 +406,7 @@ void insertPatientRecord(char* info) {
             hash_insert(patients, p->id, p);
         } else {
             printf("Fatal error. Patient with id %s already exists. Terminating the monitor\n", p->id);
-            //TODO: Free all memory
+            exit_monitor();
             exit(EXIT_FAILURE);
         }
 }
@@ -420,15 +415,10 @@ void recordPatientExit(char* info) {
     char delim[3] = " \n";
     // Use strtok_r to keep the rest of the string in order to initialize the patient, as it is given
     // in the exaxt same order as before.
-    char* query = strtok(info, delim);
     char* r_id = strtok(NULL, delim);
     char* exit_d = strtok(NULL, delim);
     Date exit_date = string_to_date(exit_d);
 
-    if (strcmp(query, "/recordPatientExit")) {
-        printf("Unexpected error occured during the query\n");
-        return;
-    }
     HashEntry patient_entry = hash_search(patients, r_id);
     if (patient_entry == NULL) {
         printf("Patient with id %s not found.\n", r_id);

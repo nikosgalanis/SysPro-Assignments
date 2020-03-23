@@ -38,7 +38,7 @@ void parse_input (char* file, int bucket_size){
     diseaseHashTable = hash_create(num_diseases, hash_strings, bucket_size, balanced_tree_destroy);
     countryHashTable = hash_create(num_countries, hash_strings, bucket_size, balanced_tree_destroy);
     // Open the input file
-    FILE* input = fopen(file, "r"); //TODO: Change to real file
+    FILE* input = fopen(file, "r");
     if (input == NULL) {
         printf("Input file not found\n");
         exit(EXIT_FAILURE);
@@ -53,7 +53,7 @@ void parse_input (char* file, int bucket_size){
     patients = hash_create(lines / 10 + 1, hash_strings, bucket_size, destroy_patient);
     char* str;
     for (int i = 0; i < lines; i++) {
-        str = malloc(100); //TODO: Change
+        str = malloc(STRING_SIZE);
         fgets(str, 100, input);
         // store the string
         all_strings_from_file[i] = str;
@@ -101,7 +101,7 @@ void parse_input (char* file, int bucket_size){
             hash_insert(patients, p->id, p);
         } else {
             printf("Fatal error. Patient with id %s already exists. Terminating the monitor\n", p->id);
-            //TODO: Free all memory
+            exit_monitor();
             exit(EXIT_FAILURE);
         }
     }
