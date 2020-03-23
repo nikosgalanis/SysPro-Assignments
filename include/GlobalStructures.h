@@ -17,8 +17,5 @@ HashTable diseaseHashTable;
 HashTable countryHashTable;
 HashTable patients;
 
-// Store the pointers to the strings in order to free them later
-char** all_strings_from_file;
-
 // number of lines in the file opened
 int lines;
