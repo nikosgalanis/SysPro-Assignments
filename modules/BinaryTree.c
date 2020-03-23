@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
 #include "BinaryTree.h"
-
+extern Pointer empty;
 // Create a node for a binary tree
 TreeNode create_binary_node(Pointer item) {
     TreeNode node = malloc(sizeof(*node));
@@ -54,6 +54,7 @@ void destroy_node(TreeNode node, DestroyFunc destroy) {
         destroy_node(node->right, destroy);
         if (destroy != NULL)
             destroy(node->value);
+        free(node->value);
+        free(node);
     }
-    free(node);
 }

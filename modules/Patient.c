@@ -4,12 +4,13 @@
 #include "Patient.h"
 #include "Dates.h"
 
+extern Pointer empty;
 // Given a string, create a new patient record
 Patient* create_patient(char* str) {
     Patient* p = malloc(sizeof(*p));
     assert(p != NULL);
     // Our delimiter will be the space character
-    char delim[2] = " ";
+    char delim[3] = " \n";
     
     char* id = strtok(str, delim);
     char* first_name = strtok(NULL, delim);
@@ -36,5 +37,6 @@ Patient* create_patient(char* str) {
 // Destroy a patient, in order to free the allocated memory
 void destroy_patient(Pointer p) {
     Patient* patient = (Patient*)p;
-    free(patient);
+    if (patient != empty && patient != NULL)
+        free(patient);
 }

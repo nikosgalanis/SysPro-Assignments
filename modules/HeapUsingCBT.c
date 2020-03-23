@@ -193,6 +193,9 @@ HeapEntry pop(Heap heap) {
 void destroy_heap(Heap heap) {
     while (heap->size != 0) {
         HeapEntry entry = pop(heap);
+        if (heap->destroy != NULL)
+            heap->destroy(entry);
         free(entry);
     }
+    free(heap);
 }

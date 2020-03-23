@@ -21,15 +21,15 @@ uint hash_strings(void* key) {
 
 // Count how many lines there are in a file
 int nlines(FILE* input) {
-    int lines = 0;
+    int n_lines = 0;
     while(!feof(input)) {
         char ch = fgetc(input);
         if(ch == '\n') {
-            lines++;
+            n_lines++;
         }
     }
     rewind(input);
-    return lines;
+    return n_lines;
 }
 
 void parse_input (char* file, int bucket_size){
@@ -37,16 +37,20 @@ void parse_input (char* file, int bucket_size){
     printf("Collecting the data from the input file...\n");
     diseaseHashTable = hash_create(num_diseases, hash_strings, bucket_size, balanced_tree_destroy);
     countryHashTable = hash_create(num_countries, hash_strings, bucket_size, balanced_tree_destroy);
-    // Open the input file //TODO:Close it
-    FILE* input = fopen("input/large.txt", "r"); //TODO: Change to real file
-    int lines = nlines(input);
+    // Open the input file
+    FILE* input = fopen(file, "r"); //TODO: Change to real file
+    if (input == NULL) {
+        printf("Input file not found\n");
+        exit(EXIT_FAILURE);
+    }
+    lines = nlines(input);
     // We are going to store all the pointers to the strings that we are given, in order to 
     // free them afterwards
     all_strings_from_file = malloc(lines * sizeof(char*));
     // We are going to use one extra hashtable, in order to quickly search if the patient allready exists
     // We are going to pass destroy patient as a destroy func, in order to free all the memory occupied
     // by the patients when we are done.
-    patients = hash_create(lines, hash_strings, bucket_size, destroy_patient);
+    patients = hash_create(lines / 10 + 1, hash_strings, bucket_size, destroy_patient);
     char* str;
     for (int i = 0; i < lines; i++) {
         str = malloc(100); //TODO: Change
@@ -101,5 +105,5 @@ void parse_input (char* file, int bucket_size){
             exit(EXIT_FAILURE);
         }
     }
-
+    fclose(input);
 }

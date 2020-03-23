@@ -46,7 +46,7 @@ HashTable hash_create(int size, HashFunc hash_fn, int bucket_size, DestroyFunc d
 	ht->array = malloc(size * sizeof(HashNode));
 	// create the first nodes of each bucket's overflow list
 	for (int i = 0; i < size; i++) {
-		ht->array[i] = create_hash_node(bucket_size);
+		ht->array[i] = create_hash_node(ht->bucket_max_entries);
 	}
 	// Store the size of the ht
 	ht->size = size;
@@ -79,7 +79,7 @@ void hash_insert(HashTable ht, char* key, Pointer item) {
 		// if we do not have an other element in our overflow list
 		if (requested->next == NULL) {
 			// create a new one
-			HashNode new_node = create_hash_node(ht->bucket_size);
+			HashNode new_node = create_hash_node(ht->bucket_max_entries);
 			// and assign it to our node
 			requested->next = new_node;
 			requested = new_node;
@@ -144,12 +144,14 @@ void hash_destroy(HashTable ht) {
 	// we want to free all the buckets
 	for (int i = 0; i < ht->size; i++) {
 		HashNode current = ht->array[i];
-		HashNode next_node = current->next;
 		// traverse the overflow list
 		while (current != NULL) {
+			HashNode next_node = current->next;
 			// destroy all the entries in the node
 			for (int pos = 0; pos < ht->bucket_max_entries; pos++) {
-				ht->destroy_items(current->bucket[pos]);
+				if (current->bucket[pos]->item != empty)
+					ht->destroy_items(current->bucket[pos]->item);
+				free(current->bucket[pos]);
 			}
 			// free the pointers to the bucket, and the bucket itself
 			free(current->bucket); 

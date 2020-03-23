@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <assert.h>
 
+
+#define STRING_SIZE 100
 // Usefull typedefs
 typedef void* Pointer;
 

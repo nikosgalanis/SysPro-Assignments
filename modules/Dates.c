@@ -20,13 +20,14 @@ Date string_to_date(char* d) {
     // We know that our string type is __identical__ to DD-MM-YYYY.
     // so, we are going to take advantage of it
     if (empty_string(d)) {
-        Date new_date = {.day = 0};
+        Date new_date = {.day = 0, .month = 0, .year = 0};
         return new_date;
     }
-    char delim[2] = "-";
+    char delim[3] = "-\n";
     char* day = strtok(d, delim);
     char* month = strtok(NULL, delim);
     char* year = strtok(NULL, delim);
+    assert(day != NULL && month != NULL && year!= NULL);
     // Update the struct fields and return it
     Date new_date = {.day = atoi(day), .month = atoi(month), .year = atoi(year)};
     return new_date;

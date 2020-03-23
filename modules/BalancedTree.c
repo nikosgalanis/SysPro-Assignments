@@ -8,6 +8,8 @@ static int max(int a, int b) {
 	return (a > b) ? a : b;
 }
 
+extern Pointer empty;
+
 // Create a new tree entry
 BalancedTreeEntry create_balanced_tree_entry(Date date, Pointer assgn) {
     BalancedTreeEntry entry = malloc(sizeof(*entry));
@@ -154,6 +156,7 @@ int node_cond_traverse(TreeNode node, ConditionFunc cond) {
     return count;
 }
 
+// Traverse a balanced tree with a visit function
 void balanced_tree_traverse(BalancedTree tree, VisitFunc visit, Pointer c, Pointer d1, Pointer d2, Pointer p) {
     node_traverse(tree->root, visit, c, d1, d2, p);
 }
@@ -169,7 +172,9 @@ void node_traverse(TreeNode node, VisitFunc visit, Pointer c, Pointer d1, Pointe
 // Destroy a balanced tree, by freeing all the memory allocated
 void balanced_tree_destroy(Pointer t) {
     BalancedTree tree = (BalancedTree)t;
-    destroy_node(tree->root, tree->destroy);
-    free(tree);
+    if (tree != empty) {
+        destroy_node(tree->root, tree->destroy);
+        free(tree);
+    }
 }
 

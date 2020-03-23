@@ -5,7 +5,7 @@
 #include "GlobalStructures.h"
 
 int main(int argc, char const *argv[]) {
-    char* in_file;
+    char* in_file = malloc(strlen(argv[4]) * sizeof(char));
     int bucket_size;
     if (argc < 9 || argc > 9) {
         printf("Use as ./diseaseMonitor -p patientRecordsFile –h1 diseaseHashtableNumOfEntries –h2 countryHashtableNumOfEntries –b bucketSize\n");
@@ -38,7 +38,7 @@ int main(int argc, char const *argv[]) {
     parse_input(in_file, bucket_size);
     monitor_menu();
 
-
+    free(in_file);
     exit(EXIT_SUCCESS);
 }
 

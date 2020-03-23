@@ -6,11 +6,11 @@
 #include "Queries.h"
 
 void monitor_menu() {
-    char* input = malloc(100 * sizeof(char)); //TODO: change
-    char delim[2] = " ";
+    char* input = malloc(STRING_SIZE * sizeof(char));
+    char delim[3] = " \n";
     printf("Enter a new query\n");
-    while (fgets(input, 100, stdin) != NULL) {
-        char* instruction = strtok_r(input, delim, &input);
+    while (fgets(input, STRING_SIZE, stdin) != NULL) {
+        char* instruction = strtok_r(input, " \n", &input);
         if (!strcmp(instruction, "/globalDiseaseStats")) {
             globalDiseaseStats(input);
         }
