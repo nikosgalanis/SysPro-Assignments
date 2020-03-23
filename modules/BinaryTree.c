@@ -21,7 +21,7 @@ TreeNode insert_binary_node(TreeNode node, CompareFunc compare, Pointer item) {
 		return create_binary_node(item);
 	}
 	// Apply the rules of binary search
-	if (compare(item, node->value) > 0) {
+	if (compare(item, node->value) < 0) {
 		node->left = insert_binary_node(node->left, compare, item);
 	} else {
 		node->right = insert_binary_node(node->right, compare, item);
