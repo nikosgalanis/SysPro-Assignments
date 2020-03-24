@@ -83,13 +83,6 @@ BTEntry remove_last(CBTree tree) {
 	return to_return;
 } 
 
-// void CBTree_destroy(Pointer t) {
-//     CBTree tree = (CBTree)t;
-//     destroy_node(tree->root, tree->destroy);
-// }
-
-
-
 //============= Binary heap functions =========================//
 
 // Create a heap entry

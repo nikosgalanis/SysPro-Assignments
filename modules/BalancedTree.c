@@ -43,6 +43,7 @@ void update_node_height(TreeNode node) {
 int node_balance(TreeNode node) {
 	return node_height(node->left) - node_height(node->right);
 }
+
 //========Implementation of the 4 esential tree rotations=========//
 
 TreeNode right_rotation(TreeNode node) {

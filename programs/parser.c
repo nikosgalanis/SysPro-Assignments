@@ -54,7 +54,7 @@ void parse_input (char* file, int bucket_size){
 	char* str;
 	for (int i = 0; i < lines; i++) {
 		str = malloc(STRING_SIZE);
-		fgets(str, 100, input);
+		fgets(str, STRING_SIZE, input);
 		// store the string
 		// all_strings_from_file[i] = str;
 		// Create a new patient record
@@ -102,6 +102,7 @@ void parse_input (char* file, int bucket_size){
 		} else {
 			printf("Fatal error. Patient with id %s already exists. Terminating the monitor\n", p->id);
 			exit_monitor();
+			free(str);
 			exit(EXIT_FAILURE);
 		}
 		free(str);
