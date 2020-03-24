@@ -21,6 +21,7 @@ Patient* create_patient(char* str) {
 	char* check_exit = strtok(NULL, delim);
 	if (id == NULL || first_name == NULL || last_name == NULL
 	 || disease == NULL || country == NULL || entry_date == NULL) {
+		 free(p);
 		 return NULL;
 	 }
 	Date entry = string_to_date(entry_date);
@@ -32,6 +33,8 @@ Patient* create_patient(char* str) {
 	} else {
 		exitd = string_to_date(NULL);
 	}
+	if (!check_if_null_date(exitd) && !check_valid_dates(entry, exitd))
+		return NULL;
 	p->id = id;
 	p->first_name = first_name;
 	p->last_name = last_name;

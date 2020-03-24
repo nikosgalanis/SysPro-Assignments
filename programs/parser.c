@@ -59,6 +59,12 @@ void parse_input (char* file, int bucket_size){
 		// all_strings_from_file[i] = str;
 		// Create a new patient record
 		Patient* p = create_patient(str);
+		if (p == NULL) {
+			printf("Fatal error. Wrong patient data. Check the %dth line of your input\n", i);
+			exit_monitor();
+			free(str);
+			exit(EXIT_FAILURE);
+		}
 		// The key for the balanced tree will be tha patient's entry date to the hospital
 		Date tree_key = p->entry_date;
 		HashEntry disease_search_result = hash_search(diseaseHashTable, p->disease);

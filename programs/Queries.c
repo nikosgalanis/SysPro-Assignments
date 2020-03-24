@@ -201,7 +201,7 @@ void print_hospitalized(Pointer ent, Pointer dummy1, Pointer dummy2, Pointer dis
 }
 
 
-//=========================================Queries for the monitor======================================================//
+//========================================= Queries for the monitor =========================================//
 
 void globalDiseaseStats(char* info) {
 	// Analyse the user input
@@ -221,7 +221,11 @@ void globalDiseaseStats(char* info) {
 	} else {
 		if (check_if_null_date(d2) == false) {
 			// Print the total n of patients for the disease, if both dates are provided
-			hash_traverse(diseaseHashTable, print_specific, &d1, &d2, NULL);
+			if (check_valid_dates(d1, d2)) {
+				hash_traverse(diseaseHashTable, print_specific, &d1, &d2, NULL);
+			} else {
+				printf("Wrong dates\n");
+			}
 		} else {
 			printf("You must provide 2 dates. Use as /globalDiseaseStats [date1 date2]\n");
 		}
@@ -241,6 +245,10 @@ void diseaseFrequency(char* info) {
 	}
 	Date d1 = string_to_date(arg2);
 	Date d2 = string_to_date(arg3);
+	if (!check_valid_dates(d1, d2)) {
+		printf("Wrong dates\n");
+		return;
+	}
 	// If there are 3 arguments, we suppose that a country is not given
 	if (country == NULL) {
 		HashEntry entry = hash_search(diseaseHashTable, virus);
@@ -316,6 +324,10 @@ void topk_Diseases(char* info) {
 		}
 	} else {
 		if (check_if_null_date(d2) == false) {
+			if (!check_valid_dates(d1, d2)) {
+				printf("Wrong dates\n");
+				return;
+			}
 			HashEntry ent = hash_search(countryHashTable, country);
 			if (ent != NULL) {
 				BalancedTree tree = ent->item;
@@ -384,6 +396,10 @@ void topk_Countries(char* info) {
 		}
 	} else {
 		if (check_if_null_date(d2) == false) {
+			if (!check_valid_dates(d1, d2)) {
+				printf("Wrong dates\n");
+				return;
+			}
 			HashEntry ent = hash_search(diseaseHashTable, disease);
 			if (ent != NULL) {
 				BalancedTree tree = ent->item;
@@ -466,7 +482,7 @@ void insertPatientRecord(char* info) {
 
 void recordPatientExit(char* info) {
 	char delim[3] = " \n";
-	char* r_id = strtok(NULL, delim);
+	char* r_id = strtok(info, delim);
 	char* exit_d = strtok(NULL, delim);
 	if (r_id == NULL || exit_d == NULL) {
 		printf("Use as /recordPatientExit recordID exitDate\n");
@@ -481,9 +497,14 @@ void recordPatientExit(char* info) {
 	// The patient record can be easily found in the patients ht, where a pointer to the record is kept
 	Patient* patient = (Patient*)patient_entry->item;
 	// Check of the patient has already exited the hospital
-	if (patient->exit_date.day != 0) {
-		// Update the desired info
-		patient->exit_date = exit_date;
+	if (check_if_null_date(patient->exit_date)) {
+		if (check_valid_dates(patient->entry_date, exit_date)) {
+			// Update the desired info
+			patient->exit_date = exit_date;
+		} else {
+			printf("Exit day before entry date\n");
+			return;
+		}
 	} else {
 		printf("The desired patient has already exited the hospital.\n");
 	}
@@ -508,6 +529,7 @@ void numCurrentPatients(char* info) {
 
 void exit_monitor(void) {
 	// free the hash tables
+	// the trees are automatically freed, because a destroy function is pased in the hash table, in order to delete them
 	hash_destroy(diseaseHashTable);
 	hash_destroy(countryHashTable);
 	hash_destroy(patients);

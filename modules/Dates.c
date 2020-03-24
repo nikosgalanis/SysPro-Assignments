@@ -38,6 +38,11 @@ bool check_if_null_date(Date date) {
 	return date.day == 0 ? true : false;
 }
 
+// Checks if a pair of dates is valid, meaning the first is before the second
+bool check_valid_dates(Date date1, Date date2) {
+	return (compare_dates(date1, date2) < 0) ? true : false;
+}
+
 // Comparing 2 dates. Return -1 if 1st is prior(or euqal) to 2nd, or 1 otherwise
 int compare_dates(Date date1, Date date2) {
 	if (date1.year < date2.year)
