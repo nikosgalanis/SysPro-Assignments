@@ -231,7 +231,6 @@ void globalDiseaseStats(char* info) {
 void diseaseFrequency(char* info) {
 	// Analyse the user input
 	char delim[3] = " \n";
-	printf("%s\n", info);
 	char* virus = strtok(info, delim);
 	char* arg2 = strtok(NULL, delim);
 	char* arg3 = strtok(NULL, delim);
@@ -420,7 +419,6 @@ void insertPatientRecord(char* info) {
 	}
 	// The key for the balanced tree will be tha patient's entry date to the hospital
 	Date tree_key = p->entry_date;
-	printf("%s\n", p->disease);
 	HashEntry disease_search_result = hash_search(diseaseHashTable, p->disease);
 	HashEntry country_search_result = hash_search(countryHashTable, p->country);
 	// If we find the entry in the hash table, then we update
