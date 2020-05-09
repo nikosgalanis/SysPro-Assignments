@@ -1,0 +1,12 @@
+*
+!*/
+
+!*.c
+!*.h
+!*.sh
+!*.txt
+!Makefile
+!.gitignore
+!README.md
+!.vscode/*.json
+!input/*
