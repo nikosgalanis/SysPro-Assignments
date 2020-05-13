@@ -12,5 +12,5 @@ typedef struct patient {
 	Date exit_date;
 } Patient;
 
-Patient* create_patient(char* str);
+Patient* create_patient(char* str, char* country);
 void destroy_patient(Pointer p);

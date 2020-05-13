@@ -1,0 +1,1 @@
+void recordPatientExit(char* info);

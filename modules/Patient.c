@@ -6,7 +6,7 @@
 
 extern Pointer empty;
 // Given a string, create a new patient record
-Patient* create_patient(char* str) {
+Patient* create_patient(char* str, char* country) {
 	Patient* p = malloc(sizeof(*p));
 	assert(p != NULL);
 	// Our delimiter will be the space character
@@ -16,7 +16,6 @@ Patient* create_patient(char* str) {
 	char* first_name = strdup(strtok(NULL, delim));
 	char* last_name = strdup(strtok(NULL, delim));
 	char* disease = strdup(strtok(NULL, delim));
-	char* country = strdup(strtok(NULL, delim));
 	char* entry_date = strdup(strtok(NULL, delim));
 	char* check_exit = strtok(NULL, delim);
 	if (id == NULL || first_name == NULL || last_name == NULL
