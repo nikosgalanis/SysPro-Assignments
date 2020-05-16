@@ -12,6 +12,7 @@ typedef struct date {
 
 bool empty_string(char* str);
 Date string_to_date(char* d);
+char* date_to_string(Date date);
 int compare_dates(Date date1, Date date2);
 bool check_valid_dates(Date date1, Date date2);
 bool check_if_null_date(Date date);

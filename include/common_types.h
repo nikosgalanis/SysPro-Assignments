@@ -9,6 +9,7 @@
 #define STRING_SIZE 1024
 #define HASH_SIZE 100
 #define BUCKET_SIZE 3
+#define FAILED -1
 // Usefull typedefs
 typedef void* Pointer;
 
