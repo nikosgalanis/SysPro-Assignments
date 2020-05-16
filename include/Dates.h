@@ -16,3 +16,4 @@ char* date_to_string(Date date);
 int compare_dates(Date date1, Date date2);
 bool check_valid_dates(Date date1, Date date2);
 bool check_if_null_date(Date date);
+bool check_equal_dates(Date date1, Date date2);

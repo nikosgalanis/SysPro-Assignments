@@ -22,6 +22,19 @@ bool check_same_country(Pointer ent, Pointer count) {
 	}
 }
 
+bool check_bigger_entry_date(Pointer p, Pointer d) {
+	Patient* patient = (Patient*)p;
+	Date* date = (Date*)d;
+	return (compare_dates(patient->entry_date, *date) > 0);
+
+}
+
+bool check_bigger_exit_date(Pointer p, Pointer d) {
+	Patient* patient = (Patient*)p;
+	Date* date = (Date*)d;
+	return (compare_dates(patient->exit_date, *date) > 0);
+
+}
 //========================================= Queries for the monitor =========================================//
 
 // Given a patient record, we want to mark his exit date. On success we return true, otherwise false
@@ -97,6 +110,69 @@ char* search_patient_record(char* r_id, HashTable patients) {
 	int string_length = strlen(r_id) + strlen(p->first_name) + strlen(p->last_name) + strlen(p->disease) + strlen(entry_date) + strlen(exit_date) + 8;
 	char* patient = malloc(string_length * sizeof(*patient));
 	// Smart way to concat many strings in C
-	snprintf(patients, "%s %s %s %s %s %s %s", r_id, p->first_name, p->last_name, p->disease, p->age, entry_date, exit_date);
+	snprintf(patients, string_length, "%s %s %s %s %s %s %s", r_id, p->first_name, p->last_name, p->disease, p->age, entry_date, exit_date);
 	return patient;
 }
+
+int num_patient_admissions(char* info, HashTable diseases_hash) {
+	char delim[3] = " \n";
+	if (info == NULL) {
+		printf("Use as /numPatientAdmissions disease date1 date2 [country]\n");
+		return FAILED;
+	}
+	// Analyze the input
+	char* disease = strtok(info, delim);
+	char* day1 = strtok(NULL, delim);
+	char* day2 = strtok(NULL, delim);
+	if (day2 == NULL) {
+		printf("Use as /numPatientAdmissions disease date1 date2 [country]\n");
+		return FAILED;
+	}
+	char* country = strtok(NULL, delim);
+	if (country == NULL) {
+		fprintf(stderr, "Error: No country provided\n");
+		return FAILED;
+	}
+	// Convert the input strings to dates
+	Date d1 = string_to_date(day1);
+	Date d2 = string_to_date(day2);
+	BalancedTree disease_tree = hash_search(diseases_hash, disease)->item;
+	// If there is no such entry in the disease ht, then we do not have any patients here
+	if (disease_tree == NULL) {
+		return 0;
+	}
+	// all the ones that are after date 2, except those that are after date 1
+	return balanced_tree_cond_traverse(disease_tree, check_bigger_entry_date, &d1) - balanced_tree_cond_traverse(disease_tree, check_bigger_entry_date, &d2);
+}	
+
+int num_patient_discharges(char* info, HashTable diseases_hash) {
+	char delim[3] = " \n";
+	if (info == NULL) {
+		printf("Use as /numPatientAdmissions disease date1 date2 [country]\n");
+		return FAILED;
+	}
+	// Analyze the input
+	char* disease = strtok(info, delim);
+	char* day1 = strtok(NULL, delim);
+	char* day2 = strtok(NULL, delim);
+	if (day2 == NULL) {
+		printf("Use as /numPatientAdmissions disease date1 date2 [country]\n");
+		return FAILED;
+	}
+	char* country = strtok(NULL, delim);
+	if (country == NULL) {
+		fprintf(stderr, "Error: No country provided\n");
+		return FAILED;
+	}
+	// Convert the input strings to dates
+	Date d1 = string_to_date(day1);
+	Date d2 = string_to_date(day2);
+	BalancedTree disease_tree = hash_search(diseases_hash, disease)->item;
+	// If there is no such entry in the disease ht, then we do not have any patients here
+	if (disease_tree == NULL) {
+		return 0;
+	}
+	// all the ones that are after date 2, except those that are after date 1
+	return balanced_tree_cond_traverse(disease_tree, check_bigger_exit_date, &d1) - balanced_tree_cond_traverse(disease_tree, check_bigger_exit_date, &d2);
+}	
+

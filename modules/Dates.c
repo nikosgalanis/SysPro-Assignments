@@ -39,7 +39,7 @@ char* date_to_string(Date date) {
 	}
 	// take advantage of the date format
 	char* res = malloc(11 * sizeof(*res));
-	snprintf(res, "%s-%s-%s", date.day, date.month, date.year);
+	snprintf(res, 11, "%s-%s-%s", date.day, date.month, date.year);
 	return res;
 }
 
@@ -71,4 +71,9 @@ int compare_dates(Date date1, Date date2) {
 				return 1;
 		}
 	}
+}
+
+bool check_equal_dates(Date date1, Date date2) {
+	return (date1.day == date2.day && date1.month == date2.month
+			&& date1.year == date2.year);
 }
