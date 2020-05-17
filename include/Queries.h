@@ -5,6 +5,7 @@
 #include "BalancedTree.h"
 #include "HashTable.h"
 #include "Patient.h"
+#include "HeapUsingCBT.h"
 #include <dirent.h> 
 #include <sys/types.h>
 #include <unistd.h>

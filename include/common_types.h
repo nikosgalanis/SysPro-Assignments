@@ -19,7 +19,7 @@ typedef int (*CompareFunc)(Pointer a, Pointer b);
 typedef void (*DestroyFunc)(Pointer value);
 typedef uint (*HashFunc)(Pointer);
 typedef void (*VisitFunc)(Pointer, Pointer, Pointer, Pointer, Pointer);
-typedef bool (*ConditionFunc)(Pointer, Pointer);
+typedef bool (*ConditionFunc)(Pointer, Pointer, Pointer, Pointer);
 
 
 void parse_input (char* file, int bucket_size);

@@ -22,18 +22,26 @@ bool check_same_country(Pointer ent, Pointer count) {
 	}
 }
 
-bool check_bigger_entry_date(Pointer p, Pointer d) {
+bool check_bigger_entry_date(Pointer p, Pointer d, Pointer dummy1, Pointer dummy2) {
 	Patient* patient = (Patient*)p;
 	Date* date = (Date*)d;
 	return (compare_dates(patient->entry_date, *date) > 0);
 
 }
 
-bool check_bigger_exit_date(Pointer p, Pointer d) {
+bool check_bigger_exit_date(Pointer p, Pointer d, Pointer dummy1, Pointer dummy2) {
 	Patient* patient = (Patient*)p;
 	Date* date = (Date*)d;
 	return (compare_dates(patient->exit_date, *date) > 0);
 
+}
+
+bool check_age_group(Pointer p, Pointer a, Pointer d1, Pointer d2) {
+	Patient* patient = (Patient*)p;
+	Date* date1 = (Date*)d1;
+	Date* date2 = (Date*)d2;
+	int age = atoi((char*)a);
+	return (patient->age < age && compare_dates(patient->entry_date, *date1) > 0 && compare_dates(*date2, patient->entry_date));
 }
 //========================================= Queries for the monitor =========================================//
 
@@ -99,22 +107,17 @@ int disease_frequency(char* info, HashTable diseases_hash) {
 	}
 }
 
-char* search_patient_record(char* r_id, HashTable patients) {
+void search_patient_record(char* r_id, HashTable patients) {
 	HashEntry result = hash_search(patients, r_id);
 	if (result == NULL) 
-		return NULL;
+		return;
 	Patient* p = result->item;
 	char* entry_date = date_to_string(p->entry_date);
 	char* exit_date = date_to_string(p->exit_date);
-	// compute the string length that we are gonna allocate and return. We want to be as accurate ass possible, because of the predetermined buff size.
-	int string_length = strlen(r_id) + strlen(p->first_name) + strlen(p->last_name) + strlen(p->disease) + strlen(entry_date) + strlen(exit_date) + 8;
-	char* patient = malloc(string_length * sizeof(*patient));
-	// Smart way to concat many strings in C
-	snprintf(patients, string_length, "%s %s %s %s %s %s %s", r_id, p->first_name, p->last_name, p->disease, p->age, entry_date, exit_date);
-	return patient;
+	printf("%s %s %s %s %s %s %s", r_id, p->first_name, p->last_name, p->disease, p->age, entry_date, exit_date);
 }
 
-int num_patient_admissions(char* info, HashTable diseases_hash) {
+void num_patient_admissions(char* info, HashTable diseases_hash) {
 	char delim[3] = " \n";
 	if (info == NULL) {
 		printf("Use as /numPatientAdmissions disease date1 date2 [country]\n");
@@ -142,10 +145,11 @@ int num_patient_admissions(char* info, HashTable diseases_hash) {
 		return 0;
 	}
 	// all the ones that are after date 2, except those that are after date 1
-	return balanced_tree_cond_traverse(disease_tree, check_bigger_entry_date, &d1) - balanced_tree_cond_traverse(disease_tree, check_bigger_entry_date, &d2);
+	int res = balanced_tree_cond_traverse(disease_tree, check_bigger_entry_date, &d1, NULL, NULL) - balanced_tree_cond_traverse(disease_tree, check_bigger_entry_date, &d2, NULL, NULL);
+	printf("%s %d\n", country, res);
 }	
 
-int num_patient_discharges(char* info, HashTable diseases_hash) {
+void num_patient_discharges(char* info, HashTable diseases_hash) {
 	char delim[3] = " \n";
 	if (info == NULL) {
 		printf("Use as /numPatientAdmissions disease date1 date2 [country]\n");
@@ -173,6 +177,44 @@ int num_patient_discharges(char* info, HashTable diseases_hash) {
 		return 0;
 	}
 	// all the ones that are after date 2, except those that are after date 1
-	return balanced_tree_cond_traverse(disease_tree, check_bigger_exit_date, &d1) - balanced_tree_cond_traverse(disease_tree, check_bigger_exit_date, &d2);
+	int res = balanced_tree_cond_traverse(disease_tree, check_bigger_exit_date, &d1, NULL, NULL) - balanced_tree_cond_traverse(disease_tree, check_bigger_exit_date, &d2, NULL, NULL);
+	printf("%s %d\n", country, res);
 }	
 
+void topk_age_ranges(char* info, HashTable diseases_hash) {
+	char delim[3] = " \n";
+	if (info == NULL) {
+		printf("Use as /topk-AgeRanges k country disease date1 date2 \n");
+		return FAILED;
+	}
+	int k = atoi(strtok(info, delim));
+	// Analyze the input
+	char* country = strtok(NULL, delim);
+	char* disease = strtok(NULL, delim);
+	char* day1 = strtok(NULL, delim);
+	char* day2 = strtok(NULL, delim);
+	if (disease == NULL) {
+		return;
+	}
+	// Convert the input strings to dates
+	Date d1 = string_to_date(day1);
+	Date d2 = string_to_date(day2);
+	BalancedTree disease_tree = hash_search(diseases_hash, disease)->item;
+	int age_gr1 = balanced_tree_cond_traverse(disease_tree, check_age_group, "20", &d1, &d2);
+	int age_gr2 = balanced_tree_cond_traverse(disease_tree, check_age_group, "40", &d1, &d2);
+	int age_gr3 = balanced_tree_cond_traverse(disease_tree, check_age_group, "60", &d1, &d2);
+	int age_gr4 = balanced_tree_cond_traverse(disease_tree, check_age_group, "120", &d1, &d2);
+	int total = age_gr1 + age_gr2 + age_gr3 + age_gr4;
+	Heap heap = create_heap(NULL);
+	heap_insert(heap, age_gr1, "0-20");
+	heap_insert(heap, age_gr2, "20-40");
+	heap_insert(heap, age_gr3, "40-60");
+	heap_insert(heap, age_gr4, "60+");
+
+	for (int i = 0; i < k && i < 4; i++) {
+		HeapEntry ent = pop(heap);
+		printf("%s: %d%%\n", ent->key, 100 * ent->priority / total);
+		free(ent);
+	}
+	destroy_heap(heap);
+}
