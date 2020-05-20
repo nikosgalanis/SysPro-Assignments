@@ -1,8 +1,10 @@
 #include <dirent.h> 
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include "common_types.h"
+#include <errno.h>
 
 void aggregator(int n_workers, int buff_size, char* input_dir) {
     // hold a pointer for the subdirs that we are going to check
@@ -13,6 +15,31 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     // Check if any error occurs
     if (input == NULL) {
         fprintf(stderr, "Problem with the given imput directory. Exiting...\n");
+        exit(EXIT_FAILURE);
+    }
+    // Create n_workers child processes with fork, and then exec to redirect to another executable
+    pid_t pid;
+    for (int i = 0; i < n_workers; i++) {
+        pid = fork();
+        // Create __two__ named pipes, so each process can write in one of them
+        char* name1 = strcat("fifo_1_", itoa(i));
+        if (mkfifo(name1, 0666) == -1) {
+            if (errno != EEXIST) {
+                perror("reciever: mkfifo");
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        char* name2 = strcat("fifo_2_", itoa(i));
+        if (mkfifo(name2, 0666) == -1) {
+            if (errno != EEXIST) {
+                perror("reciever: mkfifo");
+                exit(EXIT_FAILURE);
+            }
+        }
+        execl("worker", name1, name2, itoa(buff_size), NULL);
+        // if we reach this point, then exec has returned, so sthg wrong has happened
+        perror("execl");
         exit(EXIT_FAILURE);
     }
     int n_dirs = 0;
@@ -31,26 +58,6 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     }
     while (remainder) {
         //assign one dir to each worker, starting from worker 1
-    }
-    char* directory;
-    DIR* dir;
-    if ((dir = opendir(directory)) == NULL) {
-        fprintf(stderr, "Worker %d unable to locate directory %s", getpid(), directory);
-        exit(EXIT_FAILURE);
-    }
-    struct dirent* file_to_scan;
-    // Traverse all the files in the directory 
-    while ((file_to_scan = readdir(dir)) != NULL) {
-        // Ignore the . and .. dirs
-        if (!strcmp(file_to_scan->d_name, ".") || !strcmp(file_to_scan->d_name, ".."))
-            continue;
-        
-    }
-    char* filename; //concat the name of the directory and the file with in_file->d_name
-    int file_desc = open(filename, O_RDONLY);
-    if (file_desc == -1) {
-        printf("Unexpected error occured\n");
-        exit(EXIT_FAILURE);
     }
 
 }

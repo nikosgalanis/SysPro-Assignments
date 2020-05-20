@@ -3,6 +3,7 @@
 #include "BalancedTree.h"
 #include "Patient.h"
 #include "LinkedList.h"
+#include "Queries.h"
 #include <dirent.h> 
 #include <sys/types.h>
 #include <unistd.h>
@@ -40,7 +41,64 @@ int nlines(FILE* input) {
 	return n_lines;
 }
 
-void worker() {
+int n_words(char* str) {
+	char delim[3] = " \n";
+	int n = 0;
+	char* res = strtok(str, delim);
+	while (res) {
+		n++;
+		res = strtok(NULL, delim);
+	}
+	return n;
+}
+
+char* read_from_pipe(int fd, int buff_size) {
+	bool read_anything = false;
+	char* str = malloc(STRING_SIZE * sizeof(*str));
+	char current[buff_size];
+	while (read(fd, current, buff_size)) {
+		strcat(str, current);
+		read_anything = true;
+	}
+	if (!read_anything)
+		free(str);
+	return read_anything ? str : NULL;
+}
+
+void write_to_pipe(int fd, int buff_size, char* info) {
+	int times = strlen(info) / buff_size + 1;
+	for (int i = 0; i < times; i++) {
+		char* current = info + (i * buff_size);
+		write(fd, current, buff_size);
+	}
+}
+
+void print_todays_stats(Pointer ent, Pointer buffer_size, Pointer f_desc, Pointer dummy1, Pointer dummy2) {
+	HashEntry entry = (HashEntry)ent;
+	int fd = *(int*)fd;
+	int buff_size = *(int*)buffer_size; 
+	write_to_pipe(fd, buff_size, entry->key);
+	int* age_groups = (int*)entry->item;
+	char group1 [40];
+	snprintf(group1, "Age range 0-20 years: %d cases\n", age_groups[0]);
+	char group2 [40];
+	snprintf(group2, "Age range 2-40 years: %d cases\n", age_groups[1]);
+	char group3 [40];
+	snprintf(group3, "Age range 40-60 years: %d cases\n", age_groups[2]);
+	char group4 [40];
+	snprintf(group4, "Age range 60+ years: %d cases\n", age_groups[3]); 
+}
+
+
+int main(int argc, char* argv[]) {
+	// Get the pipe names from the args, and open them:
+	// 1st for writing, 2nd for reading
+	int reading, writing;
+	writing = open(argv[1], O_WRONLY);
+	reading = open(argv[2], O_RDONLY);
+	int buff_size = atoi(argv[3]);
+	// Hold a delimiter to parse strings later
+	char delim[3] = " \n";
 	// Variables to stroe statistics for records.
 	int total = 0; int failed = 0;
 	// Create a hash table to store all the different diseases
@@ -52,6 +110,13 @@ void worker() {
 	// create a list to store all the directories that the worker must handle
 	List dirs = create_list(compare_strings, free); //TODO: Maybe NULL for destroy
 	//TODO: get the info from the pipe on which directories to read
+	char* str;
+	while (true) {
+		str = read_from_pipe(reading, buff_size);
+		if (! strcmp(str, "/e"))
+			break;
+		list_insert(dirs, str);
+	}
 	// for every directory/country that the worker must parse
 	for (int i = 0; i < dirs->size; i++) {
 		// find the dir name
@@ -76,6 +141,9 @@ void worker() {
 				perror("open");
 				exit(EXIT_FAILURE);
 			}
+			// Begin thje writing of the stats in the pipe
+			write_to_pipe(writing, buff_size, file_to_scan->d_name);
+			write_to_pipe(writing, buff_size, directory);
 			// allocate size for the string that will temporary store the records
 			char* record = malloc(STRING_SIZE * sizeof(*record));
 			// read all the contents of the files
@@ -140,10 +208,29 @@ void worker() {
 						failed++;
 					}
 				}
+				total++;
 			}
-			total++;
-			// TODO: Send the data back to the parent
+			hash_traverse(todays_diseases, print_todays_stats, &buff_size, &writing, NULL);
 			hash_destroy(todays_diseases);
+		}
+	}
+	while (true) {
+		char* query;
+		while (true) {
+			//..
+		}
+		if (strstr(query, "diseaseFrequency")) {
+			if (n_words(query) < 4 || n_words(query) > 5) {
+				fprintf(stderr, "error\n");
+				continue;
+			}
+			char* virus = strtok(query, delim);
+			char* arg2 = strtok(NULL, delim);
+			char* arg3 = strtok(NULL, delim);
+			char* country = strtok(NULL, delim);
+			if (country) {
+				int res = disease_frequency(query, diseases_hash);
+			}
 		}
 	}
 }

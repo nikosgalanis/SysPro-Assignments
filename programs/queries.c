@@ -107,17 +107,19 @@ int disease_frequency(char* info, HashTable diseases_hash) {
 	}
 }
 
-void search_patient_record(char* r_id, HashTable patients) {
+char* search_patient_record(char* r_id, HashTable patients) {
 	HashEntry result = hash_search(patients, r_id);
 	if (result == NULL) 
 		return;
 	Patient* p = result->item;
 	char* entry_date = date_to_string(p->entry_date);
 	char* exit_date = date_to_string(p->exit_date);
-	printf("%s %s %s %s %s %s %s", r_id, p->first_name, p->last_name, p->disease, p->age, entry_date, exit_date);
+	char* patient = malloc((sizeof(*p) + 10) * strlen(patient));
+	snprintf(patient, "%s %s %s %s %s %s %s", r_id, p->first_name, p->last_name, p->disease, p->age, entry_date, exit_date);
+	return patient;
 }
 
-void num_patient_admissions(char* info, HashTable diseases_hash) {
+char* num_patient_admissions(char* info, HashTable diseases_hash) {
 	char delim[3] = " \n";
 	if (info == NULL) {
 		printf("Use as /numPatientAdmissions disease date1 date2 [country]\n");
@@ -146,8 +148,11 @@ void num_patient_admissions(char* info, HashTable diseases_hash) {
 	}
 	// all the ones that are after date 2, except those that are after date 1
 	int res = balanced_tree_cond_traverse(disease_tree, check_bigger_entry_date, &d1, NULL, NULL) - balanced_tree_cond_traverse(disease_tree, check_bigger_entry_date, &d2, NULL, NULL);
-	printf("%s %d\n", country, res);
-}	
+	char* to_return = malloc(strlen(country) + strlen(itoa(res)) + 3);
+	snprintf(to_return, "%s %d\n", country, res);
+	return to_return;
+}
+
 
 void num_patient_discharges(char* info, HashTable diseases_hash) {
 	char delim[3] = " \n";
@@ -178,13 +183,15 @@ void num_patient_discharges(char* info, HashTable diseases_hash) {
 	}
 	// all the ones that are after date 2, except those that are after date 1
 	int res = balanced_tree_cond_traverse(disease_tree, check_bigger_exit_date, &d1, NULL, NULL) - balanced_tree_cond_traverse(disease_tree, check_bigger_exit_date, &d2, NULL, NULL);
-	printf("%s %d\n", country, res);
+	char* to_return = malloc(strlen(country) + strlen(itoa(res)) + 3);
+	snprintf(to_return, "%s %d\n", country, res);
+	return to_return;
 }	
 
-void topk_age_ranges(char* info, HashTable diseases_hash) {
+void topk_age_ranges(char* info, HashTable diseases_hash) { //TODO: Fix the return type
 	char delim[3] = " \n";
 	if (info == NULL) {
-		printf("Use as /topk-AgeRanges k country disease date1 date2 \n");
+		fprintf(stderr, "Use as /topk-AgeRanges k country disease date1 date2 \n");
 		return FAILED;
 	}
 	int k = atoi(strtok(info, delim));
