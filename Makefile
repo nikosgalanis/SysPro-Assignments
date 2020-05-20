@@ -28,7 +28,7 @@ clean:
 	$(RM) 
 
 run:
-	./$(TARGET_EXEC)
+	./$(TARGET_EXEC) -w 10 -b 100 -i input
 
 valgrind:
 	valgrind ./$(TARGET_EXEC)

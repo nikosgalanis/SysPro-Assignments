@@ -72,21 +72,8 @@ bool recordPatientExit(char* info, HashTable patients, char* exit_d) {
 }
 
 // This query is called by each worker for each country, thus the country argument will always be present
-int disease_frequency(char* info, HashTable diseases_hash) {
-	// Analyse the user input
-	char delim[3] = " \n";
-	char* virus = strtok(info, delim);
-	char* arg2 = strtok(NULL, delim);
-	char* arg3 = strtok(NULL, delim);
-	char* country = strtok(NULL, delim);
-	if (virus == NULL || arg2 == NULL || arg3 == NULL) {
-		fprintf(stderr, "Use as /diseaseFrequency virusName date1 date2 [country]\n");
-		return FAILED;
-	}
-	if (country == NULL) {
-		fprintf(stderr, "Error: No country provided\n");
-		return FAILED;
-	}
+int disease_frequency(char* virus, char* arg2, char* arg3, char* country, HashTable diseases_hash) {
+
 	Date d1 = string_to_date(arg2);
 	Date d2 = string_to_date(arg3);
 	if (!check_valid_dates(d1, d2)) {
@@ -119,28 +106,10 @@ char* search_patient_record(char* r_id, HashTable patients) {
 	return patient;
 }
 
-char* num_patient_admissions(char* info, HashTable diseases_hash) {
-	char delim[3] = " \n";
-	if (info == NULL) {
-		printf("Use as /numPatientAdmissions disease date1 date2 [country]\n");
-		return FAILED;
-	}
-	// Analyze the input
-	char* disease = strtok(info, delim);
-	char* day1 = strtok(NULL, delim);
-	char* day2 = strtok(NULL, delim);
-	if (day2 == NULL) {
-		printf("Use as /numPatientAdmissions disease date1 date2 [country]\n");
-		return FAILED;
-	}
-	char* country = strtok(NULL, delim);
-	if (country == NULL) {
-		fprintf(stderr, "Error: No country provided\n");
-		return FAILED;
-	}
+char* num_patient_admissions(char* disease, char* arg2, char* arg3, char* country, HashTable diseases_hash) {
 	// Convert the input strings to dates
-	Date d1 = string_to_date(day1);
-	Date d2 = string_to_date(day2);
+	Date d1 = string_to_date(arg2);
+	Date d2 = string_to_date(arg3);
 	BalancedTree disease_tree = hash_search(diseases_hash, disease)->item;
 	// If there is no such entry in the disease ht, then we do not have any patients here
 	if (disease_tree == NULL) {
@@ -153,29 +122,10 @@ char* num_patient_admissions(char* info, HashTable diseases_hash) {
 	return to_return;
 }
 
-
-void num_patient_discharges(char* info, HashTable diseases_hash) {
-	char delim[3] = " \n";
-	if (info == NULL) {
-		printf("Use as /numPatientAdmissions disease date1 date2 [country]\n");
-		return FAILED;
-	}
-	// Analyze the input
-	char* disease = strtok(info, delim);
-	char* day1 = strtok(NULL, delim);
-	char* day2 = strtok(NULL, delim);
-	if (day2 == NULL) {
-		printf("Use as /numPatientAdmissions disease date1 date2 [country]\n");
-		return FAILED;
-	}
-	char* country = strtok(NULL, delim);
-	if (country == NULL) {
-		fprintf(stderr, "Error: No country provided\n");
-		return FAILED;
-	}
+char* num_patient_discharges(char* disease, char* arg2, char* arg3, char* country, HashTable diseases_hash) {
 	// Convert the input strings to dates
-	Date d1 = string_to_date(day1);
-	Date d2 = string_to_date(day2);
+	Date d1 = string_to_date(arg2);
+	Date d2 = string_to_date(arg3);
 	BalancedTree disease_tree = hash_search(diseases_hash, disease)->item;
 	// If there is no such entry in the disease ht, then we do not have any patients here
 	if (disease_tree == NULL) {
@@ -186,23 +136,9 @@ void num_patient_discharges(char* info, HashTable diseases_hash) {
 	char* to_return = malloc(strlen(country) + strlen(itoa(res)) + 3);
 	snprintf(to_return, "%s %d\n", country, res);
 	return to_return;
-}	
+}
 
-void topk_age_ranges(char* info, HashTable diseases_hash) { //TODO: Fix the return type
-	char delim[3] = " \n";
-	if (info == NULL) {
-		fprintf(stderr, "Use as /topk-AgeRanges k country disease date1 date2 \n");
-		return FAILED;
-	}
-	int k = atoi(strtok(info, delim));
-	// Analyze the input
-	char* country = strtok(NULL, delim);
-	char* disease = strtok(NULL, delim);
-	char* day1 = strtok(NULL, delim);
-	char* day2 = strtok(NULL, delim);
-	if (disease == NULL) {
-		return;
-	}
+void topk_age_ranges(int k, char* country, char* disease, char* day1, char* day2, HashTable diseases_hash) { //TODO: Fix the return type
 	// Convert the input strings to dates
 	Date d1 = string_to_date(day1);
 	Date d2 = string_to_date(day2);

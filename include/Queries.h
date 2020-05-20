@@ -21,8 +21,8 @@
 // void exit_monitor(void);
 
 bool recordPatientExit(char* info, HashTable patients, char* exit_d);
-int disease_frequency(char* info, HashTable diseases_hash);
+int disease_frequency(char* virus, char* arg2, char* arg3, char* country, HashTable diseases_hash);
 char* search_patient_record(char* r_id, HashTable patients);
-char* num_patient_admissions(char* info, HashTable diseases_hash);
-void num_patient_discharges(char* info, HashTable diseases_hash);\
-void topk_age_ranges(char* info, HashTable diseases_hash);
+char* num_patient_admissions(char* disease, char* arg2, char* arg3, char* country, HashTable diseases_hash);
+char* num_patient_discharges(char* disease, char* arg2, char* arg3, char* country, HashTable diseases_hash);
+void topk_age_ranges(int k, char* country, char* disease, char* day1, char* day2, HashTable diseases_hash);

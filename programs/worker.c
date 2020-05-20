@@ -3,7 +3,7 @@
 #include "BalancedTree.h"
 #include "Patient.h"
 #include "LinkedList.h"
-#include "Queries.h"
+#include "WorkerMenu.h"
 #include <dirent.h> 
 #include <sys/types.h>
 #include <unistd.h>
@@ -97,8 +97,6 @@ int main(int argc, char* argv[]) {
 	writing = open(argv[1], O_WRONLY);
 	reading = open(argv[2], O_RDONLY);
 	int buff_size = atoi(argv[3]);
-	// Hold a delimiter to parse strings later
-	char delim[3] = " \n";
 	// Variables to stroe statistics for records.
 	int total = 0; int failed = 0;
 	// Create a hash table to store all the different diseases
@@ -214,23 +212,16 @@ int main(int argc, char* argv[]) {
 			hash_destroy(todays_diseases);
 		}
 	}
+	int total = 0, success = 0;
 	while (true) {
 		char* query;
 		while (true) {
 			//..
 		}
-		if (strstr(query, "diseaseFrequency")) {
-			if (n_words(query) < 4 || n_words(query) > 5) {
-				fprintf(stderr, "error\n");
-				continue;
-			}
-			char* virus = strtok(query, delim);
-			char* arg2 = strtok(NULL, delim);
-			char* arg3 = strtok(NULL, delim);
-			char* country = strtok(NULL, delim);
-			if (country) {
-				int res = disease_frequency(query, diseases_hash);
-			}
+		char* result = worker_menu(query, dirs, patients, diseases_hash); //TODO: Change ret type
+		if (result) {
+			success++;
 		}
-	}
+		total++;
+	} 
 }

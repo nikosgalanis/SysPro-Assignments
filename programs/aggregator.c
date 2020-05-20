@@ -19,6 +19,7 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     }
     // Create n_workers child processes with fork, and then exec to redirect to another executable
     pid_t pid;
+    int temp_workers[n_workers];
     for (int i = 0; i < n_workers; i++) {
         pid = fork();
         // Create __two__ named pipes, so each process can write in one of them
