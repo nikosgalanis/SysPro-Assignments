@@ -54,18 +54,19 @@ int list_size(List list) {
 // Return the nth item of a list
 Pointer list_nth(List list, int n) {
     ListNode temp = list->head;
-    while (temp && n) {
+    while (temp) {
         if (n == 0) {
             return temp->value;
         }
-        temp = temp->next;
+        temp = temp->next; n--;
     }
     // If we reach this point, then the item is not on the list, thus return NULL
     return NULL;
 }
 
 // Destroy a list by freeing all of the memory occupied
-void destroy_list(List list) {
+void destroy_list(Pointer l) {
+    List list = (List)l;
     ListNode temp = list->head;
         while (temp != NULL) {
         ListNode next = temp->next;

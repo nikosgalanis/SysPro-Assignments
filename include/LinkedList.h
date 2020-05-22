@@ -24,4 +24,4 @@ void list_insert(List list, Pointer node);
 bool list_search(List list, Pointer value);
 int list_size(List list);
 Pointer list_nth(List list, int n);
-void destroy_list(List list);
+void destroy_list(Pointer list);
