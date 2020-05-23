@@ -107,11 +107,12 @@ int main(int argc, char* argv[]) {
 	HashTable patients = hash_create(HASH_SIZE, hash_strings, sizeof(Patient) + sizeof(Pointer), destroy_patient);
 	// create a list to store all the directories that the worker must handle
 	List dirs = create_list(compare_strings, free); //TODO: Maybe NULL for destroy
-	//TODO: get the info from the pipe on which directories to read
 	char* str;
+	// read the dirs from the pipe
 	while (true) {
 		str = read_from_pipe(reading, buff_size);
-		if (! strcmp(str, "/e"))
+		// break when "end" is sent by the parent
+		if (! strcmp(str, "end"))
 			break;
 		list_insert(dirs, str);
 	}

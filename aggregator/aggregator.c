@@ -123,4 +123,8 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
         // increase the bounds-checking counters
         i++; count++;
     }
+    // write this into every pipe so the workers know when the dirs that they are gonna parse end
+    for (int i = 0; i < n_workers; i++) {
+        write_to_pipe(writing[i], buff_size, "end");
+    }
 }

@@ -44,28 +44,46 @@ int n_words(char* str) {
 	}
 	return n;
 }
-
-char* read_from_pipe(int fd, int buff_size) {
-	bool read_anything = false;
-	char* str = malloc(STRING_SIZE * sizeof(*str));
-	char current[buff_size];
-	while (read(fd, current, buff_size)) {
-		strcat(str, current);
-		read_anything = true;
-	}
-	if (!read_anything)
-		free(str);
-	return read_anything ? str : NULL;
+// Read a string from a pipe
+char* read_from_pipe(int fd) {
+	// find out how many bytes we want to read
+	int n_bytes;
+	// wait until somehting is written on the pipe
+	while (read(fd, &n_bytes, sizeof(int)) < 0);
+	// Allocate a string to return (space for \0 is taken into account by the write function)
+	char* res = malloc(n_bytes * sizeof(*res));
+	// read exactly n bytes from the pipe
+	read(fd, res, n_bytes);
+	return res;
 }
 
+// Write a sting to the pipe, by writing buff_size bytes each time
 void write_to_pipe(int fd, int buff_size, char* info) {
-	int times = strlen(info) / buff_size + 1;
+	// exit violently if a buffsize of 0 is given
+	assert(buff_size > 0);
+	// Hold the number of the bytes in the message, so the reader will read easily
+	int n_bytes = strlen(info);
+	// Write the n of bytes in front of the message
+	write(fd, &n_bytes, sizeof(int));
+	// set how many times we must write to the buffer given the buff_size
+	int times = (strlen(info) / buff_size) + 1;
 	for (int i = 0; i < times; i++) {
-		char* current = info + (i * buff_size);
-		write(fd, current, buff_size);
+		// the first n-1 times, write the full message
+		if (i < times - 1) {
+			char* current = info + (i * buff_size);
+            fprintf(stdout, "%s\n", current);
+			write(fd, current, buff_size);
+		}
+		else {
+			// the last time, write the remainder of the bytes in the file (if it is grater than 0)
+			int remainder = n_bytes % buff_size;
+			if (remainder) {
+				char* current = info + (i * buff_size);
+				write(fd, current, (remainder));
+			}
+		}
 	}
 }
-
 
 void print_list_contents(Pointer ent, Pointer d1, Pointer d2, Pointer d3, Pointer d4) {
     HashEntry entry = (HashEntry)ent;
