@@ -1,9 +1,11 @@
 #pragma once
 
 #include "common_types.h"
+#include "common_functions.h"
 #include "HashTable.h"
 #include "BalancedTree.h"
 #include "HashTable.h"
+#include "Dates.h"
 #include "Patient.h"
 #include "HeapUsingCBT.h"
 #include <dirent.h> 

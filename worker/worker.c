@@ -1,92 +1,30 @@
 #include "common_types.h"
+#include "common_functions.h"
 #include "HashTable.h"
 #include "BalancedTree.h"
 #include "Patient.h"
 #include "LinkedList.h"
 #include "WorkerMenu.h"
 #include <dirent.h> 
+#include "Queries.h"
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
 
-int compare_strings (Pointer a, Pointer b) {
-	return strcmp((char*) a, (char*)b);
-}
-
-// compare function for our entries
-int compare(Pointer first, Pointer second) {
-	TreeEntry entry1 = (TreeEntry)first;
-	TreeEntry entry2 = (TreeEntry)second;
-	return compare_dates(entry1->date, entry2->date);
-}
-
-uint hash_strings(void* key) {
-	char* str = (char*)key;
-	int h = 0, a = 33;
-	for (; *str != '\0'; str++)
-		h = (a * h + *str);
-	return h;
-}
-
-// Count how many lines there are in a file
-int nlines(FILE* input) {
-	int n_lines = 0;
-	while (!feof(input)) {
-		char ch = fgetc(input);
-		if (ch == '\n') {
-			n_lines++;
-		}
-	}
-	rewind(input);
-	return n_lines;
-}
-
-int n_words(char* str) {
-	char delim[3] = " \n";
-	int n = 0;
-	char* res = strtok(str, delim);
-	while (res) {
-		n++;
-		res = strtok(NULL, delim);
-	}
-	return n;
-}
-
-char* read_from_pipe(int fd, int buff_size) {
-	bool read_anything = false;
-	char* str = malloc(STRING_SIZE * sizeof(*str));
-	char current[buff_size];
-	while (read(fd, current, buff_size)) {
-		strcat(str, current);
-		read_anything = true;
-	}
-	if (!read_anything)
-		free(str);
-	return read_anything ? str : NULL;
-}
-
-void write_to_pipe(int fd, int buff_size, char* info) {
-	int times = strlen(info) / buff_size + 1;
-	for (int i = 0; i < times; i++) {
-		char* current = info + (i * buff_size);
-		write(fd, current, buff_size);
-	}
-}
-
 void print_todays_stats(Pointer ent, Pointer buffer_size, Pointer f_desc, Pointer dummy1, Pointer dummy2) {
 	HashEntry entry = (HashEntry)ent;
-	int fd = *(int*)fd;
+	int fd = *(int*)f_desc;
 	int buff_size = *(int*)buffer_size; 
 	write_to_pipe(fd, buff_size, entry->key);
 	int* age_groups = (int*)entry->item;
 	char group1 [40];
-	snprintf(group1, "Age range 0-20 years: %d cases\n", age_groups[0]);
+	snprintf(group1, 40, "Age range 0-20 years: %d cases\n", age_groups[0]);
 	char group2 [40];
-	snprintf(group2, "Age range 2-40 years: %d cases\n", age_groups[1]);
+	snprintf(group2, 40, "Age range 2-40 years: %d cases\n", age_groups[1]);
 	char group3 [40];
-	snprintf(group3, "Age range 40-60 years: %d cases\n", age_groups[2]);
+	snprintf(group3, 40, "Age range 40-60 years: %d cases\n", age_groups[2]);
 	char group4 [40];
-	snprintf(group4, "Age range 60+ years: %d cases\n", age_groups[3]); 
+	snprintf(group4, 40, "Age range 60+ years: %d cases\n", age_groups[3]); 
 }
 
 
@@ -94,9 +32,11 @@ int main(int argc, char* argv[]) {
 	// Get the pipe names from the args, and open them:
 	// 1st for writing, 2nd for reading
 	int reading, writing;
-	writing = open(argv[1], O_WRONLY);
-	reading = open(argv[2], O_RDONLY);
 	int buff_size = atoi(argv[3]);
+	writing = open(argv[1], O_WRONLY);
+	// reading = open(argv[2], O_RDONLY);
+	printf("%s\n", argv[2]);
+
 	// Variables to stroe statistics for records.
 	int total = 0; int failed = 0;
 	// Create a hash table to store all the different diseases
@@ -108,9 +48,10 @@ int main(int argc, char* argv[]) {
 	// create a list to store all the directories that the worker must handle
 	List dirs = create_list(compare_strings, free); //TODO: Maybe NULL for destroy
 	char* str;
+	printf("damn\n");
 	// read the dirs from the pipe
 	while (true) {
-		str = read_from_pipe(reading, buff_size);
+		str = read_from_pipe(reading);
 		// break when "end" is sent by the parent
 		if (! strcmp(str, "end"))
 			break;
@@ -213,7 +154,7 @@ int main(int argc, char* argv[]) {
 			hash_destroy(todays_diseases);
 		}
 	}
-	int total = 0, success = 0;
+	int total_queries = 0, success_queries = 0;
 	while (true) {
 		char* query;
 		while (true) {
@@ -221,8 +162,8 @@ int main(int argc, char* argv[]) {
 		}
 		char* result = worker_menu(query, dirs, patients, diseases_hash); //TODO: Change ret type
 		if (result) {
-			success++;
+			success_queries++;
 		}
-		total++;
+		total_queries++;
 	} 
 }

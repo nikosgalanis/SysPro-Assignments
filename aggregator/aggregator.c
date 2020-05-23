@@ -32,10 +32,13 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     for (int i = 0; i < n_workers; i++) {
         pid = fork();
         if (pid != 0) {
+            // the parent saves the child's pid
             workers_ids[n_workers] = pid;
         } else {
+            // The child does the rest
             // Create __two__ named pipes, so each process can write in one of them
-            char* name1 = strcat("fifo_1_", itoa(i));
+            char* name1 = concat("../tmp/fifo_1_", itoa(i));
+            // printf("%s %ld\n", name1, strlen(name1));
             if (mkfifo(name1, 0666) == -1) {
                 if (errno != EEXIST) {
                     perror("reciever: mkfifo");
@@ -43,14 +46,15 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
                 }
             }
 
-            char* name2 = strcat("fifo_2_", itoa(i));
+            char* name2 = concat("../tmp/fifo_2_", itoa(i));
             if (mkfifo(name2, 0666) == -1) {
                 if (errno != EEXIST) {
                     perror("reciever: mkfifo");
                     exit(EXIT_FAILURE);
                 }
             }
-            execl("worker", name1, name2, itoa(buff_size), NULL);
+            // printf("here\n");
+            execl("../worker/worker", "worker", name1, name2, itoa(buff_size), NULL);
             // if we reach this point, then exec has returned, so sthg wrong has happened
             perror("execl");
             exit(EXIT_FAILURE);
@@ -61,7 +65,8 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     // open the creaded pipes. Their names are fifo_1|2_i
     for (int i = 0; i < n_workers; i++) {
         reading[i] = open(strcat("fifo_1_", itoa(i)), O_RDONLY);
-        writing[i] = open(strcat("fifo_2_", itoa(i)), O_WRONLY);
+        // writing[i] = open(strcat("fifo_2_", itoa(i)), O_WRONLY);
+        printf("edwww\n");
         if (writing[i] < 0 || reading[i] < 0) {
             perror("fifo open error");
             // TODO: kill the children
@@ -79,7 +84,7 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     for (int i = 0; i < n_dirs; i++) {
         sub_dir = readdir(input);
         // Exclude the "." and ".." dirs
-        if (sub_dir->d_name != "." && sub_dir->d_name != "..")
+			if (!strcmp(sub_dir->d_name, ".") || !strcmp(sub_dir->d_name, ".."))
             dirs[i] = strdup(sub_dir->d_name);
     }
     // We removed . and .. dirs

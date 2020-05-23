@@ -33,15 +33,15 @@ Date string_to_date(char* d) {
 	return new_date;
 }
 
-// char* date_to_string(Date date) {
-// 	if (check_if_null_date(date)) {
-// 		return "--";
-// 	}
-// 	// take advantage of the date format
-// 	char* res = malloc(11 * sizeof(*res));
-// 	snprintf(res, 11, "%s-%s-%s", date.day, date.month, date.year);
-// 	return res;
-// }
+char* date_to_string(Date date) {
+	if (check_if_null_date(date)) {
+		return "--";
+	}
+	// take advantage of the date format
+	char* res = malloc(11 * sizeof(*res));
+	snprintf(res, 11, "%d-%d-%d", date.day, date.month, date.year);
+	return res;
+}
 
 // Returns true if date is null (aka -)
 bool check_if_null_date(Date date) {

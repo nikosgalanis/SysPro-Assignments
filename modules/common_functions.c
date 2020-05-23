@@ -12,6 +12,20 @@ int compare(Pointer first, Pointer second) {
 	return compare_dates(entry1->date, entry2->date);
 }
 
+// remake of the concat function because c is useless
+char* concat(char* str1, char* str2) {
+	char* res = malloc(strlen(str1) + strlen(str2) + 1);
+    memcpy(res, str1, strlen(str1));
+    memcpy(res + strlen(str1), str2, strlen(str2) + 1);
+	return res;
+}
+
+// Remake of the itoa function, because gcc sucks
+char* itoa(int n) {
+    char* res = malloc(10);
+    snprintf(res, 10,"%d", n);
+    return res;
+} 
 
 // djb2 hash function, simple and quick
 uint hash_strings(Pointer value) {

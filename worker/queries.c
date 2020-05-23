@@ -7,7 +7,7 @@ int compare_ids (Pointer a, Pointer b) {
 	return strcmp((char*) a, (char*)b);
 }
 // condition function for a tree
-bool check_same_country(Pointer ent, Pointer count) {
+bool check_same_country(Pointer ent, Pointer count, Pointer dummy1, Pointer dummy2) {
 	char* country = (char*) count;
 	BalancedTreeEntry entry = (BalancedTreeEntry)ent;
 	if (entry!= NULL) {
@@ -97,12 +97,12 @@ int disease_frequency(char* virus, char* arg2, char* arg3, char* country, HashTa
 char* search_patient_record(char* r_id, HashTable patients) {
 	HashEntry result = hash_search(patients, r_id);
 	if (result == NULL) 
-		return;
+		return NULL;
 	Patient* p = result->item;
 	char* entry_date = date_to_string(p->entry_date);
 	char* exit_date = date_to_string(p->exit_date);
-	char* patient = malloc((sizeof(*p) + 10) * strlen(patient));
-	snprintf(patient, "%s %s %s %s %s %s %s", r_id, p->first_name, p->last_name, p->disease, p->age, entry_date, exit_date);
+	char* patient = malloc((sizeof(*p) + 10) * sizeof(*patient));
+	snprintf(patient, (sizeof(*p) + 10), "%s %s %s %s %d %s %s", r_id, p->first_name, p->last_name, p->disease, p->age, entry_date, exit_date);
 	return patient;
 }
 
@@ -113,12 +113,12 @@ char* num_patient_admissions(char* disease, char* arg2, char* arg3, char* countr
 	BalancedTree disease_tree = hash_search(diseases_hash, disease)->item;
 	// If there is no such entry in the disease ht, then we do not have any patients here
 	if (disease_tree == NULL) {
-		return 0;
+		return NULL;
 	}
 	// all the ones that are after date 2, except those that are after date 1
 	int res = balanced_tree_cond_traverse(disease_tree, check_bigger_entry_date, &d1, NULL, NULL) - balanced_tree_cond_traverse(disease_tree, check_bigger_entry_date, &d2, NULL, NULL);
 	char* to_return = malloc(strlen(country) + strlen(itoa(res)) + 3);
-	snprintf(to_return, "%s %d\n", country, res);
+	snprintf(to_return, strlen(country) + strlen(itoa(res)) + 3, "%s %d\n", country, res);
 	return to_return;
 }
 
@@ -129,12 +129,12 @@ char* num_patient_discharges(char* disease, char* arg2, char* arg3, char* countr
 	BalancedTree disease_tree = hash_search(diseases_hash, disease)->item;
 	// If there is no such entry in the disease ht, then we do not have any patients here
 	if (disease_tree == NULL) {
-		return 0;
+		return NULL;
 	}
 	// all the ones that are after date 2, except those that are after date 1
 	int res = balanced_tree_cond_traverse(disease_tree, check_bigger_exit_date, &d1, NULL, NULL) - balanced_tree_cond_traverse(disease_tree, check_bigger_exit_date, &d2, NULL, NULL);
 	char* to_return = malloc(strlen(country) + strlen(itoa(res)) + 3);
-	snprintf(to_return, "%s %d\n", country, res);
+	snprintf(to_return, strlen(country) + strlen(itoa(res)) + 3, "%s %d\n", country, res);
 	return to_return;
 }
 
