@@ -155,14 +155,50 @@ int main(int argc, char* argv[]) {
 			hash_destroy(todays_diseases);
 		}
 	}
-	int total_queries = 0, success_queries = 0;
+	int failed_queries = 0, success_queries = 0;
+	// read queries until we break
 	while (true) {
+		// read the instruction from the pipe
 		char* query = read_from_pipe(reading);
-		
-		char* result = worker_menu(query, dirs, patients, diseases_hash); //TODO: Change ret type
+		// check if an exit command is given
+		if (!strcmp(query, "/exit")) {
+			// TODO: Maybe add to a function instead
+			// free the memory occupied by our data structures
+			hash_destroy(diseases_hash);
+			hash_destroy(patients);
+			// create a log file to store what we've achieved
+			int log_fd;
+			// TODO: Maybe mkdir()
+			if ((log_fd = open(concat("../logs/log_file.", atoi(getpid())), O_CREAT | O_RDWR, 0666)) == -1) {
+				perror("creating");
+				exit(1);
+			}
+			// print all the dirs that we handled
+			for (int i = 0; i < dirs->size; i++) {
+				char* buff = concat((char*)list_nth(dirs, i), "\n");
+				write(log_fd, buff, strlen(buff) + 1);
+			}
+			char* buff = malloc(STRING_SIZE * sizeof(*buff));
+			sprintf(buff, "SUCCESS %d\n FAILED %d\n", success_queries, failed_queries);
+			write(log_fd, buff, strlen(buff));
+			free(buff);
+			// close the log file descriptor
+			close(log_fd);
+			// close the pipes
+			close(reading); close(writing);
+			// free the list of the countries given
+			destroy_list(dirs);
+			// Finally, exit the worker
+			exit(EXIT_SUCCESS);
+		}
+		// call the menu to analyze the query and return the result
+		char* result = worker_menu(query, dirs, patients, diseases_hash);
+		// check if an error has occured (returned null), thus we must not write in the pipe
 		if (result) {
 			success_queries++;
+			write_to_pipe(writing, buff_size, result);
+		} else {
+			failed_queries++;
 		}
-		total_queries++;
 	} 
 }

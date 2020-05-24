@@ -156,7 +156,7 @@ char* topk_age_ranges(int k, char* country, char* disease, char* day1, char* day
 	char* ret = malloc(50 * sizeof(*ret));
 	for (int i = 0; i < k && i < 4; i++) {
 		HeapEntry ent = pop(heap);
-		sprintf(ret, "%s: %d%%\n", ent->key, 100 * ent->priority / total);
+		sprintf(ret, "%s: %d%%\n", ent->key, 100 * ent->priority / total); //TODO: Check snprintf
 		free(ent);
 	}
 	destroy_heap(heap);
