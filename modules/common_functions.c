@@ -63,11 +63,17 @@ char* read_from_pipe(int fd) {
 	// find out how many bytes we want to read
 	int n_bytes;
 	// wait until somehting is written on the pipe
-	while (read(fd, &n_bytes, sizeof(int)) < 0);
+	// while (read(fd, &n_bytes, sizeof(int)) < 0) {
+	// 	fprintf(stderr, "waiting\n");
+	// };
+	sleep(2);
+	read(fd, &n_bytes, sizeof(int));
+	fprintf(stderr, "aaa %d\n", n_bytes);
 	// Allocate a string to return (space for \0 is taken into account by the write function)
 	char* res = malloc(n_bytes * sizeof(*res));
 	// read exactly n bytes from the pipe
 	read(fd, res, n_bytes);
+	fprintf(stderr, "%s\n", res);
 	return res;
 }
 
@@ -85,7 +91,6 @@ void write_to_pipe(int fd, int buff_size, char* info) {
 		// the first n-1 times, write the full message
 		if (i < times - 1) {
 			char* current = info + (i * buff_size);
-            fprintf(stdout, "%s\n", current);
 			write(fd, current, buff_size);
 		}
 		else {

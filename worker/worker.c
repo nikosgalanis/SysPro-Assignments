@@ -31,12 +31,11 @@ void print_todays_stats(Pointer ent, Pointer buffer_size, Pointer f_desc, Pointe
 int main(int argc, char* argv[]) {
 	// Get the pipe names from the args, and open them:
 	// 1st for writing, 2nd for reading
+	fprintf(stderr, "here\n");
 	int reading, writing;
 	int buff_size = atoi(argv[3]);
-	writing = open(argv[1], O_WRONLY);
-	// reading = open(argv[2], O_RDONLY);
-	printf("%s\n", argv[2]);
-
+	writing = open(argv[1], O_WRONLY, 0666);
+	reading = open(argv[2], O_RDONLY | O_NONBLOCK, 0666);
 	// Variables to stroe statistics for records.
 	int total = 0; int failed = 0;
 	// Create a hash table to store all the different diseases
@@ -48,15 +47,17 @@ int main(int argc, char* argv[]) {
 	// create a list to store all the directories that the worker must handle
 	List dirs = create_list(compare_strings, free); //TODO: Maybe NULL for destroy
 	char* str;
-	printf("damn\n");
 	// read the dirs from the pipe
+	// sleep (3);
 	while (true) {
 		str = read_from_pipe(reading);
+		fprintf(stderr, "%s\n", str);
 		// break when "end" is sent by the parent
 		if (! strcmp(str, "end"))
 			break;
 		list_insert(dirs, str);
 	}
+	fprintf(stderr,"yesss\n");
 	// for every directory/country that the worker must parse
 	for (int i = 0; i < dirs->size; i++) {
 		// find the dir name

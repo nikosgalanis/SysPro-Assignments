@@ -1,5 +1,7 @@
 #include "common_types.h"
 
+void aggregator(int n_workers, int buff_size, char* input_dir);
+
 int main(int argc, char const *argv[]) {
     char* input_dir;
 	int n_workers, buffer_size;

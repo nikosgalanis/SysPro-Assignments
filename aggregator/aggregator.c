@@ -19,7 +19,6 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     // hold a pointer for the subdirs that we are going to check
     struct dirent* sub_dir;
     // Open the input dir given by the user
-    printf("%s\n", input_dir);
     DIR* input = opendir(input_dir);
     // Check if any error occurs
     if (input == NULL) {
@@ -28,10 +27,14 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     }
     // Create n_workers child processes with fork, and then exec to redirect to another executable
     pid_t pid;
+    // arrays to store the file descs coming from the pipes for reading and writing
+    int reading[n_workers]; int writing[n_workers];
+    // array to store the pids of the childs
     int workers_ids[n_workers];
     for (int i = 0; i < n_workers; i++) {
         pid = fork();
         if (pid != 0) {
+            printf("parent\n");
             // the parent saves the child's pid
             workers_ids[n_workers] = pid;
         } else {
@@ -53,7 +56,19 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
                     exit(EXIT_FAILURE);
                 }
             }
-            // printf("here\n");
+            reading[i] = open(name1, O_RDONLY | O_NONBLOCK, 0666);
+            if ((writing[i] = open(name2, O_WRONLY, 0666)) == -1){
+                perror("creating");
+                exit(1);
+            }
+            fprintf (stderr, "%s\n", name2);
+            // printf("edwww\n");
+            if (writing[i] < 0 || reading[i] < 0) {
+                perror("fifo open error");
+                // TODO: kill the children
+                exit(EXIT_FAILURE);
+            }
+            fprintf(stderr, "damn it\n");
             execl("../worker/worker", "worker", name1, name2, itoa(buff_size), NULL);
             // if we reach this point, then exec has returned, so sthg wrong has happened
             perror("execl");
@@ -61,18 +76,7 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
         }
     }
     // arrays to store the file descs coming from the pipes for reading and writing
-    int reading[n_workers]; int writing[n_workers];
     // open the creaded pipes. Their names are fifo_1|2_i
-    for (int i = 0; i < n_workers; i++) {
-        reading[i] = open(strcat("fifo_1_", itoa(i)), O_RDONLY);
-        // writing[i] = open(strcat("fifo_2_", itoa(i)), O_WRONLY);
-        printf("edwww\n");
-        if (writing[i] < 0 || reading[i] < 0) {
-            perror("fifo open error");
-            // TODO: kill the children
-            exit(EXIT_FAILURE);
-        }
-    }
     int n_dirs = 0;
     // Check how many directories(aka countries) are in the parent dir
     while ((sub_dir = readdir(input)) != NULL) {
@@ -80,21 +84,22 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     }
     rewinddir(input);
     // store the directories in an array
+    // We removed . and .. dirs
+    n_dirs -= 2;
     char* dirs[n_dirs]; 
     for (int i = 0; i < n_dirs; i++) {
         sub_dir = readdir(input);
         // Exclude the "." and ".." dirs
-			if (!strcmp(sub_dir->d_name, ".") || !strcmp(sub_dir->d_name, ".."))
-            dirs[i] = strdup(sub_dir->d_name);
+			if (strcmp(sub_dir->d_name, ".") && strcmp(sub_dir->d_name, ".."))
+                dirs[i] = strdup(sub_dir->d_name);
+            else 
+                i--;
     }
-    // We removed . and .. dirs
-    n_dirs -= 2;
     // Create a hash table to store which dirs are held by which workers (key: pid, item: list of countries)
     HashTable dirs_to_workers = hash_create(n_workers, hash_strings, BUCKET_SIZE, destroy_list); //TODO: Check destroy fn
     for (int i = 0; i < n_workers; i++) {
         // Initialize the item: an (for now) empty list
         List list = create_list(compare_strings, NULL); //TODO : Possible leaks
-        printf("%s\n", itoa(i));
         hash_insert(dirs_to_workers, itoa(workers_ids[i]), list);
     }
     int split_no = n_dirs / n_workers;
@@ -128,6 +133,7 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
         // increase the bounds-checking counters
         i++; count++;
     }
+    fprintf(stderr,"lalala\n");
     // write this into every pipe so the workers know when the dirs that they are gonna parse end
     for (int i = 0; i < n_workers; i++) {
         write_to_pipe(writing[i], buff_size, "end");
