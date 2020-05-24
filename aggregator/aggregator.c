@@ -10,11 +10,6 @@
 #include <errno.h>
 #include <string.h>
 
-// List countries query, designated for the monitor, as he is the onnly one who has all the info ensembled
-void list_countries(HashTable hash) {
-    hash_traverse(hash, print_list_contents, NULL, NULL, NULL);
-}
-
 void aggregator(int n_workers, int buff_size, char* input_dir) {
     // hold a pointer for the subdirs that we are going to check
     struct dirent* sub_dir;
@@ -57,11 +52,11 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
                 }
             }
             reading[i] = open(name1, O_RDONLY | O_NONBLOCK, 0666);
-            if ((writing[i] = open(name2, O_WRONLY, 0666)) == -1){
+            fprintf (stderr, "%s\n", name2);
+            if ((writing[i] = open(name2, O_WRONLY, 0666)) == -1) {
                 perror("creating");
                 exit(1);
             }
-            fprintf (stderr, "%s\n", name2);
             // printf("edwww\n");
             if (writing[i] < 0 || reading[i] < 0) {
                 perror("fifo open error");
@@ -138,4 +133,6 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     for (int i = 0; i < n_workers; i++) {
         write_to_pipe(writing[i], buff_size, "end");
     }
+    // call the menu to get queries from the user and pass them to the workers
+
 }

@@ -138,7 +138,7 @@ char* num_patient_discharges(char* disease, char* arg2, char* arg3, char* countr
 	return to_return;
 }
 
-void topk_age_ranges(int k, char* country, char* disease, char* day1, char* day2, HashTable diseases_hash) { //TODO: Fix the return type
+char* topk_age_ranges(int k, char* country, char* disease, char* day1, char* day2, HashTable diseases_hash) {
 	// Convert the input strings to dates
 	Date d1 = string_to_date(day1);
 	Date d2 = string_to_date(day2);
@@ -153,11 +153,12 @@ void topk_age_ranges(int k, char* country, char* disease, char* day1, char* day2
 	heap_insert(heap, age_gr2, "20-40");
 	heap_insert(heap, age_gr3, "40-60");
 	heap_insert(heap, age_gr4, "60+");
-
+	char* ret = malloc(50 * sizeof(*ret));
 	for (int i = 0; i < k && i < 4; i++) {
 		HeapEntry ent = pop(heap);
-		printf("%s: %d%%\n", ent->key, 100 * ent->priority / total);
+		sprintf(ret, "%s: %d%%\n", ent->key, 100 * ent->priority / total);
 		free(ent);
 	}
 	destroy_heap(heap);
+	return ret;
 }

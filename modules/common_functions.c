@@ -58,6 +58,16 @@ int n_words(char* str) {
 	}
 	return n;
 }
+
+char* nth_word(char* str, int n) {
+	char delim[3] = " \n";
+	char* res = strtok(str, delim);
+	while (n) {
+		n--;
+		res = strtok(NULL, delim);
+	}
+	return res;
+}
 // Read a string from a pipe
 char* read_from_pipe(int fd) {
 	// find out how many bytes we want to read

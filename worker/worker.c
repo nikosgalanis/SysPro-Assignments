@@ -157,10 +157,8 @@ int main(int argc, char* argv[]) {
 	}
 	int total_queries = 0, success_queries = 0;
 	while (true) {
-		char* query;
-		while (true) {
-			//..
-		}
+		char* query = read_from_pipe(reading);
+		
 		char* result = worker_menu(query, dirs, patients, diseases_hash); //TODO: Change ret type
 		if (result) {
 			success_queries++;
