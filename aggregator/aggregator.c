@@ -25,13 +25,13 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     // arrays to store the file descs coming from the pipes for reading and writing
     int reading[n_workers]; int writing[n_workers];
     // array to store the pids of the childs
-    int workers_ids[n_workers];
+    pid_t workers_ids[n_workers];
     for (int i = 0; i < n_workers; i++) {
         pid = fork();
         if (pid != 0) {
             printf("parent\n");
             // the parent saves the child's pid
-            workers_ids[n_workers] = pid;
+            workers_ids[i] = pid;
         } else {
             // The child does the rest
             // Create __two__ named pipes, so each process can write in one of them
@@ -51,27 +51,24 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
                     exit(EXIT_FAILURE);
                 }
             }
-            reading[i] = open(name1, O_RDONLY | O_NONBLOCK, 0666);
+            // open the pipes and store the descriptors in the arrays that we have allocated
+            if ((reading[i] = open(name1, O_RDONLY | O_NONBLOCK, 0666)) == -1) {
+                perror("creating");
+                exit(EXIT_FAILURE);
+            }
             fprintf (stderr, "%s\n", name2);
             if ((writing[i] = open(name2, O_WRONLY, 0666)) == -1) {
                 perror("creating");
-                exit(1);
-            }
-            // printf("edwww\n");
-            if (writing[i] < 0 || reading[i] < 0) {
-                perror("fifo open error");
-                // TODO: kill the children
                 exit(EXIT_FAILURE);
             }
             fprintf(stderr, "damn it\n");
+            // call an exec function, in order to redirect the child in the worker file
             execl("../worker/worker", "worker", name1, name2, itoa(buff_size), NULL);
             // if we reach this point, then exec has returned, so sthg wrong has happened
             perror("execl");
             exit(EXIT_FAILURE);
         }
     }
-    // arrays to store the file descs coming from the pipes for reading and writing
-    // open the creaded pipes. Their names are fifo_1|2_i
     int n_dirs = 0;
     // Check how many directories(aka countries) are in the parent dir
     while ((sub_dir = readdir(input)) != NULL) {
@@ -91,27 +88,18 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
                 i--;
     }
     // Create a hash table to store which dirs are held by which workers (key: pid, item: list of countries)
-    HashTable dirs_to_workers = hash_create(n_workers, hash_strings, BUCKET_SIZE, destroy_list); //TODO: Check destroy fn
-    for (int i = 0; i < n_workers; i++) {
-        // Initialize the item: an (for now) empty list
-        List list = create_list(compare_strings, NULL); //TODO : Possible leaks
-        hash_insert(dirs_to_workers, itoa(workers_ids[i]), list);
-    }
+    HashTable dirs_to_workers = hash_create(n_workers, hash_strings, BUCKET_SIZE, free); //TODO: Check destroy fn
+    // find out the correct way to split the dirs
     int split_no = n_dirs / n_workers;
     int remainder = n_dirs % n_workers;
-    // assign in each worker `split_no` dirs 
     int count = 0;
+    // assign in each worker `split_no` dirs 
     for (int i = 0; i < n_workers; i++) {
         for (int j = 0; j < split_no; j++) {
             // assign the dir by informing the child process through the pipe
             write_to_pipe(writing[i], buff_size, dirs[count]);
-            // get access to the child's current dirs
-            HashEntry entry = hash_search(dirs_to_workers, itoa(workers_ids[i]));
-            if (entry) {
-                List curr_list = entry->item;
-                // add the newly assigned country to the list
-                list_insert(curr_list, dirs[count]);
-            }
+            // save the tuple in the hash table
+            hash_insert(dirs_to_workers, dirs[count], &workers_ids[i]);
             count++;
         }
     }
@@ -121,11 +109,8 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     while (remainder) {
         // assign the dir by informing the child process through the pipe=
         write_to_pipe(writing[i], buff_size, dirs[count]);
-        // get access to the child's current dirs
-        List curr_list = hash_search(dirs_to_workers, itoa(workers_ids[i]))->item;
-        // add the newly assigned country to the list
-        list_insert(curr_list, dirs[count]);
-        // increase the bounds-checking counters
+        // save the tuple in the hash table
+        hash_insert(dirs_to_workers, dirs[count], &workers_ids[i]);
         i++; count++;
     }
     fprintf(stderr,"lalala\n");

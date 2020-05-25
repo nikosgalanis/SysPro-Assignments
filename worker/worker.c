@@ -151,7 +151,11 @@ int main(int argc, char* argv[]) {
 				}
 				total++;
 			}
+			// traverse the ht to send the stats to the pipe
 			hash_traverse(todays_diseases, print_todays_stats, &buff_size, &writing, NULL);
+			// close the file that we just parsed
+			close(fd);
+			// destroy the ht for this file, in order to avoid leaks
 			hash_destroy(todays_diseases);
 		}
 	}
@@ -189,7 +193,7 @@ int main(int argc, char* argv[]) {
 			// free the list of the countries given
 			destroy_list(dirs);
 			// Finally, exit the worker
-			exit(EXIT_SUCCESS);
+			exit(EXIT_SUCCESS); //TODO: Wait for the sigkill
 		}
 		// call the menu to analyze the query and return the result
 		char* result = worker_menu(query, dirs, patients, diseases_hash);

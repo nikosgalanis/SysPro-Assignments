@@ -95,14 +95,18 @@ int disease_frequency(char* virus, char* arg2, char* arg3, char* country, HashTa
 }
 
 char* search_patient_record(char* r_id, HashTable patients) {
+	// search for the wanted record in the patients hash
 	HashEntry result = hash_search(patients, r_id);
+	// if we do not find it just return NULL
 	if (result == NULL) 
 		return NULL;
+	// else, construct the appropriate string to store the patient record
 	Patient* p = result->item;
 	char* entry_date = date_to_string(p->entry_date);
 	char* exit_date = date_to_string(p->exit_date);
 	char* patient = malloc((sizeof(*p) + 10) * sizeof(*patient));
 	snprintf(patient, (sizeof(*p) + 10), "%s %s %s %s %d %s %s", r_id, p->first_name, p->last_name, p->disease, p->age, entry_date, exit_date);
+	// return that string
 	return patient;
 }
 

@@ -117,9 +117,6 @@ void write_to_pipe(int fd, int buff_size, char* info) {
 void print_list_contents(Pointer ent, Pointer d1, Pointer d2, Pointer d3, Pointer d4) {
     HashEntry entry = (HashEntry)ent;
     if (entry) {
-        List list = entry->item;
-        for (int i = 0; i < list->size; i++) {
-            printf("%12s %s\n", (char*)list_nth(list, i), entry->key);
-        }
+		printf("%12s %d\n", entry->key, *(int*)entry->item);
     }
 }
