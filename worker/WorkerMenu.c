@@ -12,6 +12,8 @@ char* worker_menu(char* query, List dirs, HashTable patients, HashTable diseases
             return NULL;
         }
         char* q = strtok(query, delim);
+        if (strcmp(q, "/diseaseFrequency"))
+            return NULL;
         char* virus = strtok(NULL, delim);
         char* arg2 = strtok(NULL, delim);
         char* arg3 = strtok(NULL, delim);
@@ -36,6 +38,8 @@ char* worker_menu(char* query, List dirs, HashTable patients, HashTable diseases
             return NULL;
         }
         char* q = strtok(query, delim);
+        if (strcmp(q, "/topk-AgeRanges"))
+            return NULL;
         // Analyze the input
         int k = atoi(strtok(NULL, delim));
         char* country = strtok(NULL, delim);
@@ -51,6 +55,8 @@ char* worker_menu(char* query, List dirs, HashTable patients, HashTable diseases
             return NULL;
         }
         char* q = strtok(query, delim);
+        if (strcmp(q, "/searchPatientRecord"))
+            return NULL;
         char* r_id = strtok(NULL, delim);
         return search_patient_record(r_id, patients);
     }
@@ -60,6 +66,8 @@ char* worker_menu(char* query, List dirs, HashTable patients, HashTable diseases
             return NULL;
         }
         char* q = strtok(query, delim);
+        if (strcmp(q, "/numPatientAdmissions"))
+            return NULL;
         char* virus = strtok(NULL, delim);
         char* arg2 = strtok(NULL, delim);
         char* arg3 = strtok(NULL, delim);
@@ -84,6 +92,8 @@ char* worker_menu(char* query, List dirs, HashTable patients, HashTable diseases
             return NULL;
         }
         char* q = strtok(query, delim);
+        if (strcmp(q, "/numPatientDischarges"))
+            return NULL;
         char* virus = strtok(NULL, delim);
         char* arg2 = strtok(NULL, delim);
         char* arg3 = strtok(NULL, delim);

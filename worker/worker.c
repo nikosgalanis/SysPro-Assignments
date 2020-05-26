@@ -31,9 +31,10 @@ void print_todays_stats(Pointer ent, Pointer buffer_size, Pointer f_desc, Pointe
 int main(int argc, char* argv[]) {
 	// Get the pipe names from the args, and open them:
 	// 1st for writing, 2nd for reading
-	fprintf(stderr, "here\n");
+	fprintf(stderr, "child begins\n");
 	int reading, writing;
 	int buff_size = atoi(argv[3]);
+	char* input_dir = concat(argv[4], "/");
 	writing = open(argv[1], O_WRONLY, 0666);
 	reading = open(argv[2], O_RDONLY | O_NONBLOCK, 0666);
 	// Variables to stroe statistics for records.
@@ -51,21 +52,22 @@ int main(int argc, char* argv[]) {
 	// sleep (3);
 	while (true) {
 		str = read_from_pipe(reading);
-		fprintf(stderr, "%s\n", str);
 		// break when "end" is sent by the parent
 		if (! strcmp(str, "end"))
 			break;
 		list_insert(dirs, str);
 	}
-	fprintf(stderr,"yesss\n");
 	// for every directory/country that the worker must parse
 	for (int i = 0; i < dirs->size; i++) {
 		// find the dir name
-		char* directory = list_nth(dirs, i);
+		char* temp_dir = concat(input_dir, list_nth(dirs, i));
+		char* directory = concat(temp_dir, "/");
+
+		fprintf(stderr, "%s\n", directory);
 		// open it to access its data
 		DIR* dir;
 		if ((dir = opendir(directory)) == NULL) {
-			fprintf(stderr, "Worker %d unable to locate directory %s", getpid(), directory);
+			fprintf(stderr, "Worker %d unable to locate directory %s\n", getpid(), directory);
 			exit(EXIT_FAILURE);
 		}
 		struct dirent* file_to_scan;
@@ -78,7 +80,9 @@ int main(int argc, char* argv[]) {
 			HashTable todays_diseases = hash_create(HASH_SIZE, hash_strings, BUCKET_SIZE, free);
 			int fd;
 			// open the file that we want to parse
-			if ((fd = open(file_to_scan->d_name, O_RDONLY | O_WRONLY)) == -1) {
+			fprintf(stderr, "file name %s\n", file_to_scan->d_name);
+			char* file_name = concat(directory, file_to_scan->d_name);
+			if ((fd = open(file_name, O_RDONLY | O_WRONLY)) == -1) {
 				perror("open");
 				exit(EXIT_FAILURE);
 			}
@@ -88,7 +92,9 @@ int main(int argc, char* argv[]) {
 			// allocate size for the string that will temporary store the records
 			char* record = malloc(STRING_SIZE * sizeof(*record));
 			// read all the contents of the files
+			fprintf(stderr, "here\n");
 			while (read(fd, record, STRING_SIZE) > 0) {
+				fprintf(stderr, "%s\n", record);
 				// If we have a patient that wants to enter
 				if (strstr(record, "ENTER")) {
 					// Create the entry, and store the age group that it belongs
@@ -161,48 +167,48 @@ int main(int argc, char* argv[]) {
 	}
 	int failed_queries = 0, success_queries = 0;
 	// read queries until we break
-	while (true) {
-		// read the instruction from the pipe
-		char* query = read_from_pipe(reading);
-		// check if an exit command is given
-		if (!strcmp(query, "/exit")) {
-			// TODO: Maybe add to a function instead
-			// free the memory occupied by our data structures
-			hash_destroy(diseases_hash);
-			hash_destroy(patients);
-			// create a log file to store what we've achieved
-			int log_fd;
-			// TODO: Maybe mkdir()
-			if ((log_fd = open(concat("../logs/log_file.", atoi(getpid())), O_CREAT | O_RDWR, 0666)) == -1) {
-				perror("creating");
-				exit(1);
-			}
-			// print all the dirs that we handled
-			for (int i = 0; i < dirs->size; i++) {
-				char* buff = concat((char*)list_nth(dirs, i), "\n");
-				write(log_fd, buff, strlen(buff) + 1);
-			}
-			char* buff = malloc(STRING_SIZE * sizeof(*buff));
-			sprintf(buff, "SUCCESS %d\n FAILED %d\n", success_queries, failed_queries);
-			write(log_fd, buff, strlen(buff));
-			free(buff);
-			// close the log file descriptor
-			close(log_fd);
-			// close the pipes
-			close(reading); close(writing);
-			// free the list of the countries given
-			destroy_list(dirs);
-			// Finally, exit the worker
-			exit(EXIT_SUCCESS); //TODO: Wait for the sigkill
-		}
-		// call the menu to analyze the query and return the result
-		char* result = worker_menu(query, dirs, patients, diseases_hash);
-		// check if an error has occured (returned null), thus we must not write in the pipe
-		if (result) {
-			success_queries++;
-			write_to_pipe(writing, buff_size, result);
-		} else {
-			failed_queries++;
-		}
-	} 
+	// while (true) {
+	// 	// read the instruction from the pipe
+	// 	char* query = read_from_pipe(reading);
+	// 	// check if an exit command is given
+	// 	if (!strcmp(query, "/exit")) {
+	// 		// TODO: Maybe add to a function instead
+	// 		// free the memory occupied by our data structures
+	// 		hash_destroy(diseases_hash);
+	// 		hash_destroy(patients);
+	// 		// create a log file to store what we've achieved
+	// 		int log_fd;
+	// 		// TODO: Maybe mkdir()
+	// 		if ((log_fd = open(concat("../logs/log_file.", itoa(getpid())), O_CREAT | O_RDWR, 0666)) == -1) {
+	// 			perror("creating");
+	// 			exit(1);
+	// 		}
+	// 		// print all the dirs that we handled
+	// 		for (int i = 0; i < dirs->size; i++) {
+	// 			char* buff = concat((char*)list_nth(dirs, i), "\n");
+	// 			write(log_fd, buff, strlen(buff) + 1);
+	// 		}
+	// 		char* buff = malloc(STRING_SIZE * sizeof(*buff));
+	// 		sprintf(buff, "SUCCESS %d\n FAILED %d\n", success_queries, failed_queries);
+	// 		write(log_fd, buff, strlen(buff));
+	// 		free(buff);
+	// 		// close the log file descriptor
+	// 		close(log_fd);
+	// 		// close the pipes
+	// 		close(reading); close(writing);
+	// 		// free the list of the countries given
+	// 		destroy_list(dirs);
+	// 		// Finally, exit the worker
+	// 		exit(EXIT_SUCCESS); //TODO: Wait for the sigkill
+	// 	}
+	// 	// call the menu to analyze the query and return the result
+	// 	char* result = worker_menu(query, dirs, patients, diseases_hash);
+	// 	// check if an error has occured (returned null), thus we must not write in the pipe
+	// 	if (result) {
+	// 		success_queries++;
+	// 		write_to_pipe(writing, buff_size, result);
+	// 	} else {
+	// 		failed_queries++;
+	// 	}
+	// } 
 }

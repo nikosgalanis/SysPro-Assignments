@@ -1,6 +1,7 @@
 #include <dirent.h> 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include "common_types.h"
@@ -9,6 +10,9 @@
 #include "LinkedList.h"
 #include <errno.h>
 #include <string.h>
+
+// declaration of the menu function
+void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_size, HashTable hash);
 
 void aggregator(int n_workers, int buff_size, char* input_dir) {
     // hold a pointer for the subdirs that we are going to check
@@ -51,21 +55,25 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
                     exit(EXIT_FAILURE);
                 }
             }
-            // open the pipes and store the descriptors in the arrays that we have allocated
-            if ((reading[i] = open(name1, O_RDONLY | O_NONBLOCK, 0666)) == -1) {
-                perror("creating");
-                exit(EXIT_FAILURE);
-            }
-            fprintf (stderr, "%s\n", name2);
-            if ((writing[i] = open(name2, O_WRONLY, 0666)) == -1) {
-                perror("creating");
-                exit(EXIT_FAILURE);
-            }
             fprintf(stderr, "damn it\n");
             // call an exec function, in order to redirect the child in the worker file
-            execl("../worker/worker", "worker", name1, name2, itoa(buff_size), NULL);
+            execl("../worker/worker", "worker", name1, name2, itoa(buff_size), input_dir, NULL);
             // if we reach this point, then exec has returned, so sthg wrong has happened
             perror("execl");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // open the pipes and store the descriptors in the arrays that we have allocated
+    for (int i = 0; i < n_workers; i++) {
+        char* name1 = concat("../tmp/fifo_1_", itoa(i));
+        char* name2 = concat("../tmp/fifo_2_", itoa(i));
+        if ((reading[i] = open(name1, O_RDONLY | O_NONBLOCK, 0666)) == -1) {
+            perror("creating");
+            exit(EXIT_FAILURE);
+        }
+        if ((writing[i] = open(name2, O_WRONLY, 0666)) == -1) {
+            perror("creating");
             exit(EXIT_FAILURE);
         }
     }
@@ -113,11 +121,25 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
         hash_insert(dirs_to_workers, dirs[count], &workers_ids[i]);
         i++; count++;
     }
-    fprintf(stderr,"lalala\n");
     // write this into every pipe so the workers know when the dirs that they are gonna parse end
     for (int i = 0; i < n_workers; i++) {
         write_to_pipe(writing[i], buff_size, "end");
     }
-    // call the menu to get queries from the user and pass them to the workers
-
+    
+    fprintf(stderr,"reached the end\n");
+    // close the input directory
+    // closedir(input);
+    // // call the menu to get queries from the user and pass them to the workers
+    // // menu(reading, writing, n_workers, workers_ids, buff_size, dirs_to_workers);
+    // // the menu returns when the user has requested to exit the program
+    // // free the hash table of the workers-countries
+    // hash_destroy(dirs_to_workers);
+    // //TODO: Send sigkill to all the workers and wait for them to end
+    // // Close all the pipes that we've opened
+    // for (int i = 0; i < n_workers; i++) {
+    //     close(reading[i]);
+    //     close(writing[i]);
+    // }
+    wait(&workers_ids[0]);
+    // we are now ready to return to the main function to wrap it up
 }

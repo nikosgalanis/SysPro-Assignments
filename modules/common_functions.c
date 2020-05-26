@@ -72,18 +72,19 @@ char* nth_word(char* str, int n) {
 char* read_from_pipe(int fd) {
 	// find out how many bytes we want to read
 	int n_bytes;
-	// wait until somehting is written on the pipe
-	// while (read(fd, &n_bytes, sizeof(int)) < 0) {
-	// 	fprintf(stderr, "waiting\n");
-	// };
-	sleep(2);
 	read(fd, &n_bytes, sizeof(int));
-	fprintf(stderr, "aaa %d\n", n_bytes);
-	// Allocate a string to return (space for \0 is taken into account by the write function)
-	char* res = malloc(n_bytes * sizeof(*res));
-	// read exactly n bytes from the pipe
-	read(fd, res, n_bytes);
-	fprintf(stderr, "%s\n", res);
+	int read_count = 0;
+    // Allocate a string to return (space for \0 is taken into account by the write function)
+	char* res = malloc((n_bytes + 1) * sizeof(*res));
+    // read until we read the whole message
+	while (read_count < n_bytes) {
+        char* curr = res + (read_count * sizeof(char));
+	    // try read exactly n bytes from the pipe
+        int old = read_count;
+        // update the read_cocunt by the result of read
+        read_count += read(fd, curr, n_bytes - old);
+    }
+    // finally, return the whole message
 	return res;
 }
 
@@ -114,9 +115,19 @@ void write_to_pipe(int fd, int buff_size, char* info) {
 	}
 }
 
+// Function to traverse our dirs_to_workers hash table
 void print_list_contents(Pointer ent, Pointer d1, Pointer d2, Pointer d3, Pointer d4) {
     HashEntry entry = (HashEntry)ent;
     if (entry) {
 		printf("%12s %d\n", entry->key, *(int*)entry->item);
     }
+}
+
+// Assign a pid to a workers's id
+int get_pos_from_pid(int pid, int* workers, int n_workers) {
+	for (int i = 0; i < n_workers; i++) {
+		if (pid == workers[i])
+			return i;
+	}
+	return FAILED;
 }
