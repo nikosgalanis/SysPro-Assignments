@@ -6,12 +6,12 @@
 
 extern Pointer empty;
 // Given a string, create a new patient record
-Patient* create_patient(char* str, char* country, char* entry_date) {
+Patient* create_patient(char* str, char* country, char* entry_str) {
+	char* entry_date = strdup(entry_str);
 	Patient* p = malloc(sizeof(*p));
 	assert(p != NULL);
 	// Our delimiter will be the space character
 	char delim[3] = " \n";
-	
 	char* id = strdup(strtok(str, delim));
 	char* action = strdup(strtok(NULL, delim));
 	// just ignore the action, we've checked it earlier
@@ -27,7 +27,7 @@ Patient* create_patient(char* str, char* country, char* entry_date) {
 		 return NULL;
 	 }
 	Date entry = string_to_date(entry_date);
-
+	free(entry_date);
 	p->id = id;
 	p->first_name = first_name;
 	p->last_name = last_name;

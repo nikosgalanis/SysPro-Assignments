@@ -1,4 +1,5 @@
 #include "common_functions.h"
+#include <dirent.h>
 
 // compare function for strings
 int compare_strings (Pointer a, Pointer b) {
@@ -130,4 +131,27 @@ int get_pos_from_pid(int pid, int* workers, int n_workers) {
 			return i;
 	}
 	return FAILED;
+}
+
+// find out how many files are in a directory
+int n_files_in_dir(char* path) {
+	int count = 0;
+	DIR* directory;
+	struct dirent* entry;
+	directory = opendir(path);
+	while ((entry = readdir(directory)) != NULL) {
+		if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, ".."))
+			count++;
+	}
+	closedir(directory);
+	return count;
+}
+
+// find out how many files a worker has
+int n_files_in_worker(char* path, List countries) {
+	int count = 0;
+	for (int i = 0; i < countries->size; i++) {
+		count += n_files_in_dir(concat(path, (char*)list_nth(countries, i)));
+	}
+	return count;
 }

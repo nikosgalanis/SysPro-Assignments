@@ -46,7 +46,8 @@ bool check_age_group(Pointer p, Pointer a, Pointer d1, Pointer d2) {
 //========================================= Queries for the monitor =========================================//
 
 // Given a patient record, we want to mark his exit date. On success we return true, otherwise false
-bool recordPatientExit(char* info, HashTable patients, char* exit_d) {
+bool recordPatientExit(char* info, HashTable patients, char* exit_str) {
+	char* exit_d = strdup(exit_str);
 	char delim[3] = " \n";
 	char* r_id = strtok(info, delim);
 	if (r_id == NULL || exit_d == NULL) {
@@ -54,6 +55,7 @@ bool recordPatientExit(char* info, HashTable patients, char* exit_d) {
 	}
 	// Mark the exit date
 	Date exit_date = string_to_date(exit_d);
+	free(exit_d);
 	// Search for the patient
 	HashEntry patient_entry = hash_search(patients, r_id);
 	if (patient_entry == NULL) {
@@ -160,7 +162,7 @@ char* topk_age_ranges(int k, char* country, char* disease, char* day1, char* day
 	char* ret = malloc(50 * sizeof(*ret));
 	for (int i = 0; i < k && i < 4; i++) {
 		HeapEntry ent = pop(heap);
-		sprintf(ret, "%s: %d%%\n", ent->key, 100 * ent->priority / total); //TODO: Check snprintf
+		sprintf(ret, "%s: %d%%\n", ent->key, 100 * ent->priority / total); 
 		free(ent);
 	}
 	destroy_heap(heap);

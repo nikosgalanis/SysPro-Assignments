@@ -118,6 +118,15 @@ HashEntry hash_search(HashTable ht, char* key) {
 	return NULL;
 }
 
+// Update a hash entry providing a new item
+void hash_update(HashTable ht, char* key, Pointer new_item) {
+	HashEntry entry = hash_search(ht, key);
+	if (entry) {
+		entry->item = new_item; //TODO: Maybe free the old one
+	} else {
+		hash_insert(ht, key, new_item);
+	}
+}
 // Traverse the ht, by applying a visit function to each entry
 void hash_traverse(HashTable ht, VisitFunc visit, Pointer d1, Pointer d2, Pointer p) {
 	// traverse all the buckets in our hash table

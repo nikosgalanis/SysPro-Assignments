@@ -10,6 +10,7 @@
 #include "LinkedList.h"
 #include <errno.h>
 #include <string.h>
+#include <signal.h>
 
 // declaration of the menu function
 void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_size, HashTable hash);
@@ -30,34 +31,37 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     int reading[n_workers]; int writing[n_workers];
     // array to store the pids of the childs
     pid_t workers_ids[n_workers];
+    char* names_1[n_workers];
+    char* names_2[n_workers];
     for (int i = 0; i < n_workers; i++) {
         pid = fork();
+        // hold the name of the 2 named pipes
+        names_1[i] = concat("../tmp/fifo_1_", itoa(i));
+        names_2[i] = concat("../tmp/fifo_2_", itoa(i));
         if (pid != 0) {
             printf("parent\n");
             // the parent saves the child's pid
             workers_ids[i] = pid;
-        } else {
-            // The child does the rest
             // Create __two__ named pipes, so each process can write in one of them
-            char* name1 = concat("../tmp/fifo_1_", itoa(i));
             // printf("%s %ld\n", name1, strlen(name1));
-            if (mkfifo(name1, 0666) == -1) {
+            if (mkfifo(names_1[i], 0666) == -1) {
                 if (errno != EEXIST) {
                     perror("reciever: mkfifo");
                     exit(EXIT_FAILURE);
                 }
             }
 
-            char* name2 = concat("../tmp/fifo_2_", itoa(i));
-            if (mkfifo(name2, 0666) == -1) {
+            if (mkfifo(names_2[i], 0666) == -1) {
                 if (errno != EEXIST) {
                     perror("reciever: mkfifo");
                     exit(EXIT_FAILURE);
                 }
+        } else {
+            // The child does the rest
             }
             fprintf(stderr, "damn it\n");
             // call an exec function, in order to redirect the child in the worker file
-            execl("../worker/worker", "worker", name1, name2, itoa(buff_size), input_dir, NULL);
+            execl("../worker/worker", "worker", names_1[i], names_2[i], itoa(buff_size), input_dir, NULL);
             // if we reach this point, then exec has returned, so sthg wrong has happened
             perror("execl");
             exit(EXIT_FAILURE);
@@ -68,7 +72,7 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     for (int i = 0; i < n_workers; i++) {
         char* name1 = concat("../tmp/fifo_1_", itoa(i));
         char* name2 = concat("../tmp/fifo_2_", itoa(i));
-        if ((reading[i] = open(name1, O_RDONLY | O_NONBLOCK, 0666)) == -1) {
+        if ((reading[i] = open(name1, O_RDONLY, 0666)) == -1) {
             perror("creating");
             exit(EXIT_FAILURE);
         }
@@ -125,21 +129,46 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     for (int i = 0; i < n_workers; i++) {
         write_to_pipe(writing[i], buff_size, "end");
     }
-    
-    fprintf(stderr,"reached the end\n");
+    // print the incoming stats from each worker
+    for (int i = 0; i < n_workers; i++) {
+        char* n = read_from_pipe(reading[i]);
+        int n_files = atoi(n);
+        for (int j = 0; j < n_files; j++) {
+            char* name = read_from_pipe(reading[i]);
+            char* country = read_from_pipe(reading[i]);
+            int n_diseases = atoi(read_from_pipe(reading[i]));
+            // fprintf(stdout, "%s\n%s\n", name, country);
+            for (int k = 0; k < n_diseases; k++) {
+                char* info = read_from_pipe(reading[i]);
+                // fprintf(stdout, "%s\n", info);
+            }
+        // fprintf(stdout, "\n\n");
+        }
+    }
     // close the input directory
-    // closedir(input);
+    fprintf(stderr, "here\n");
+    closedir(input);
     // // call the menu to get queries from the user and pass them to the workers
-    // // menu(reading, writing, n_workers, workers_ids, buff_size, dirs_to_workers);
-    // // the menu returns when the user has requested to exit the program
-    // // free the hash table of the workers-countries
-    // hash_destroy(dirs_to_workers);
-    // //TODO: Send sigkill to all the workers and wait for them to end
-    // // Close all the pipes that we've opened
+    // menu(reading, writing, n_workers, workers_ids, buff_size, dirs_to_workers);
+    // the menu returns when the user has requested to exit the program
+    // free the hash table of the workers-countries
+    hash_destroy(dirs_to_workers);
     // for (int i = 0; i < n_workers; i++) {
-    //     close(reading[i]);
-    //     close(writing[i]);
+    //     kill(workers_ids[i], SIGKILL);
     // }
+    //TODO: Send sigkill to all the workers and wait for them to end
+    // for (int i = 0; i < n_workers; i++)
+    //     wait(NULL);
+
+    // Delete all the pipes that we've opened
+    for (int i = 0; i < n_workers; i++) {
+        // close(reading[i]);
+        // close(writing[i]);
+        fprintf(stderr, "----------------------------------%s-------------------------- \n", names_1[i]);
+        // unlink(names_1[i]);
+        // unlink(names_2[i]);
+
+    }
     wait(&workers_ids[0]);
     // we are now ready to return to the main function to wrap it up
 }

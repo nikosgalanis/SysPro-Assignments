@@ -2,11 +2,9 @@
 #include "WorkerMenu.h"
 #include "common_functions.h"
 
-//TODO: The point is for this func to return a char* that we're gonna send to the pipe
-
 char* worker_menu(char* query, List dirs, HashTable patients, HashTable diseases_hash) {
     char delim[3] = " \n";
-    if (strstr(query, "/diseaseFrequency")) { //TODO: Check for correct call of strstr
+    if (strstr(query, "/diseaseFrequency")) {
         if (n_words(query) < 4 || n_words(query) > 5) {
             fprintf(stderr, "error\n");
             return NULL;
@@ -80,7 +78,7 @@ char* worker_menu(char* query, List dirs, HashTable patients, HashTable diseases
             char* ret = malloc(STRING_SIZE * sizeof(*ret));
             for (int i = 0; i < dirs->size; i++) {
                 char* curr_country = list_nth(dirs, i);
-                // append the result in the return string  //TODO: Check if snprintf works the way we want to 
+                // append the result in the return string 
                 sprintf(ret, "%s", num_patient_admissions(virus, arg2, arg3, curr_country, diseases_hash));
             }
             return ret;
@@ -106,7 +104,7 @@ char* worker_menu(char* query, List dirs, HashTable patients, HashTable diseases
             char* ret = malloc(STRING_SIZE * sizeof(*ret));
             for (int i = 0; i < dirs->size; i++) {
                 char* curr_country = list_nth(dirs, i);
-                // append the result in the return string  //TODO: Check if snprintf works the way we want to 
+                // append the result in the return string 
                 sprintf(ret, "%s", num_patient_discharges(virus, arg2, arg3, curr_country, diseases_hash));
             }
             return ret;

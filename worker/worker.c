@@ -15,28 +15,38 @@ void print_todays_stats(Pointer ent, Pointer buffer_size, Pointer f_desc, Pointe
 	HashEntry entry = (HashEntry)ent;
 	int fd = *(int*)f_desc;
 	int buff_size = *(int*)buffer_size; 
+	// write the disease to the pipe
 	write_to_pipe(fd, buff_size, entry->key);
 	int* age_groups = (int*)entry->item;
-	char group1 [40];
-	snprintf(group1, 40, "Age range 0-20 years: %d cases\n", age_groups[0]);
-	char group2 [40];
-	snprintf(group2, 40, "Age range 2-40 years: %d cases\n", age_groups[1]);
-	char group3 [40];
-	snprintf(group3, 40, "Age range 40-60 years: %d cases\n", age_groups[2]);
-	char group4 [40];
-	snprintf(group4, 40, "Age range 60+ years: %d cases\n", age_groups[3]); 
+	// collect data and add them to a string
+	char* group1  = malloc(40 * sizeof(*group1));
+	sprintf(group1, "Age range 0-20 years: %d cases\n", age_groups[0]);
+	char* group2  = malloc(40 * sizeof(*group2));
+	sprintf(group2, "Age range 2-40 years: %d cases\n", age_groups[1]);
+	char* group3  = malloc(40 * sizeof(*group3));
+	sprintf(group3, "Age range 40-60 years: %d cases\n", age_groups[2]);
+	char* group4  = malloc(40 * sizeof(*group4));
+	sprintf(group4, "Age range 60+ years: %d cases\n", age_groups[3]);
+	int len = strlen(group1) + strlen(group2) + strlen(group3) + strlen(group4);
+	char final [len];
+	// collect all the data in one string
+	sprintf(final, "%s%s%s%s\n", group1, group2, group3, group4);
+	// free the temp strings allocated
+	free(group1); free(group2); free(group3); free(group4);
+	// write the final string in the pipe
+	write_to_pipe(fd, buff_size, final);
 }
 
 
 int main(int argc, char* argv[]) {
 	// Get the pipe names from the args, and open them:
 	// 1st for writing, 2nd for reading
-	fprintf(stderr, "child begins\n");
+	fprintf(stderr, "child %s\n", argv[1]);
 	int reading, writing;
 	int buff_size = atoi(argv[3]);
 	char* input_dir = concat(argv[4], "/");
 	writing = open(argv[1], O_WRONLY, 0666);
-	reading = open(argv[2], O_RDONLY | O_NONBLOCK, 0666);
+	reading = open(argv[2], O_RDONLY, 0666);
 	// Variables to stroe statistics for records.
 	int total = 0; int failed = 0;
 	// Create a hash table to store all the different diseases
@@ -56,14 +66,16 @@ int main(int argc, char* argv[]) {
 		if (! strcmp(str, "end"))
 			break;
 		list_insert(dirs, str);
+
 	}
+	// inform the parent how many stat strings he will read
+	int n_files = n_files_in_worker(input_dir, dirs);
+	write_to_pipe(writing, buff_size, itoa(n_files));
 	// for every directory/country that the worker must parse
 	for (int i = 0; i < dirs->size; i++) {
 		// find the dir name
 		char* temp_dir = concat(input_dir, list_nth(dirs, i));
 		char* directory = concat(temp_dir, "/");
-
-		fprintf(stderr, "%s\n", directory);
 		// open it to access its data
 		DIR* dir;
 		if ((dir = opendir(directory)) == NULL) {
@@ -78,27 +90,30 @@ int main(int argc, char* argv[]) {
 				continue;
 			// create a hash table to store thbe statistics needed for each file.
 			HashTable todays_diseases = hash_create(HASH_SIZE, hash_strings, BUCKET_SIZE, free);
-			int fd;
+			// hold the old name of the file as the patients' country
+			char* temp_name = file_to_scan->d_name;
+			// get a full path to the file to open it
+			char* file_name = concat(directory, temp_name);
 			// open the file that we want to parse
-			fprintf(stderr, "file name %s\n", file_to_scan->d_name);
-			char* file_name = concat(directory, file_to_scan->d_name);
-			if ((fd = open(file_name, O_RDONLY | O_WRONLY)) == -1) {
+			FILE* curr_file = fopen(file_name, "r");
+			if (curr_file == NULL) {
 				perror("open");
-				exit(EXIT_FAILURE);
+			 	exit(EXIT_FAILURE);
 			}
 			// Begin thje writing of the stats in the pipe
 			write_to_pipe(writing, buff_size, file_to_scan->d_name);
-			write_to_pipe(writing, buff_size, directory);
+			char* country_to_send = list_nth(dirs, i);
+			write_to_pipe(writing, buff_size, country_to_send);
+			// write_to_pipe(writing, buff_size, country_to_send);
 			// allocate size for the string that will temporary store the records
 			char* record = malloc(STRING_SIZE * sizeof(*record));
 			// read all the contents of the files
-			fprintf(stderr, "here\n");
-			while (read(fd, record, STRING_SIZE) > 0) {
-				fprintf(stderr, "%s\n", record);
+
+			while (fgets(record, STRING_SIZE, curr_file) != NULL) {
 				// If we have a patient that wants to enter
 				if (strstr(record, "ENTER")) {
 					// Create the entry, and store the age group that it belongs
-					Patient* p = create_patient(record, directory, file_to_scan->d_name); //TODO: Propably need to combine dir + file names
+					Patient* p = create_patient(record, country_to_send, temp_name);
 					// Check if everything is ok
 					if (p) {
 						Date tree_key = p->entry_date;
@@ -121,7 +136,7 @@ int main(int argc, char* argv[]) {
 						if (patient_entry == NULL) {
 							hash_insert(patients, p->id, p);
 						} else {
-							fprintf(stderr, "error\n");
+							// fprintf(stderr, "error\n");
 							failed++;
 						}
 						// search for the disease for the stats
@@ -147,25 +162,30 @@ int main(int argc, char* argv[]) {
 							age_groups[2]++;
 						else 
 							age_groups[3]++;
+						// update the hash entry
+						hash_update(todays_diseases, p->disease, age_groups);
 					}
 				} else {
 					// else, the patient must exit, with exit date the name of the file
-					if (recordPatientExit(record, patients, file_to_scan->d_name) == false) {
-						fprintf(stderr, "error");
+					if (recordPatientExit(record, patients, temp_name) == false) {
+						// fprintf(stderr, "error\n");
 						failed++;
 					}
 				}
 				total++;
 			}
+			// inform the parent how many diseases to read
+			char* n_dis = itoa(todays_diseases->items);
+			write_to_pipe(writing, buff_size, n_dis);
 			// traverse the ht to send the stats to the pipe
 			hash_traverse(todays_diseases, print_todays_stats, &buff_size, &writing, NULL);
 			// close the file that we just parsed
-			close(fd);
+			fclose(curr_file);
 			// destroy the ht for this file, in order to avoid leaks
 			hash_destroy(todays_diseases);
 		}
 	}
-	int failed_queries = 0, success_queries = 0;
+	// int failed_queries = 0, success_queries = 0;
 	// read queries until we break
 	// while (true) {
 	// 	// read the instruction from the pipe
