@@ -43,7 +43,6 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
             // the parent saves the child's pid
             workers_ids[i] = pid;
             // Create __two__ named pipes, so each process can write in one of them
-            // printf("%s %ld\n", name1, strlen(name1));
             if (mkfifo(names_1[i], 0666) == -1) {
                 if (errno != EEXIST) {
                     perror("reciever: mkfifo");
@@ -88,7 +87,7 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     }
     rewinddir(input);
     // store the directories in an array
-    // We removed . and .. dirs
+    // We aer gonna remove . and .. dirs
     n_dirs -= 2;
     char* dirs[n_dirs]; 
     for (int i = 0; i < n_dirs; i++) {
@@ -131,15 +130,15 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     }
     // print the incoming stats from each worker
     for (int i = 0; i < n_workers; i++) {
-        char* n = read_from_pipe(reading[i]);
+        char* n = read_from_pipe(reading[i], buff_size);
         int n_files = atoi(n);
         for (int j = 0; j < n_files; j++) {
-            char* name = read_from_pipe(reading[i]);
-            char* country = read_from_pipe(reading[i]);
-            int n_diseases = atoi(read_from_pipe(reading[i]));
+            char* name = read_from_pipe(reading[i], buff_size);
+            char* country = read_from_pipe(reading[i], buff_size);
+            int n_diseases = atoi(read_from_pipe(reading[i], buff_size));
             // fprintf(stdout, "%s\n%s\n", name, country);
             for (int k = 0; k < n_diseases; k++) {
-                char* info = read_from_pipe(reading[i]);
+                char* info = read_from_pipe(reading[i], buff_size);
                 // fprintf(stdout, "%s\n", info);
             }
         // fprintf(stdout, "\n\n");

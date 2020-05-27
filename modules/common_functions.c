@@ -49,44 +49,66 @@ int nlines(FILE* input) {
 	return n_lines;
 }
 
-int n_words(char* str) {
+// Get the number of the words in a string
+int n_words(char* s) {
 	char delim[3] = " \n";
 	int n = 0;
+    char* str = strdup(s);
 	char* res = strtok(str, delim);
+    // read until we reach null
 	while (res) {
 		n++;
 		res = strtok(NULL, delim);
 	}
+    // no leaks here
+    free (str);
 	return n;
 }
 
-char* nth_word(char* str, int n) {
+// Get the n-th word of a string
+char* nth_word(char* s, int n) {
+    char* str = strdup(s);
+    int nw = n_words(str);
+    char* arr[nw];
 	char delim[3] = " \n";
-	char* res = strtok(str, delim);
-	while (n) {
-		n--;
-		res = strtok(NULL, delim);
-	}
-	return res;
+	arr[0] = strtok(str, delim);
+    int i = 1;
+    char* next;
+	while (i < n) {
+		arr[i] = strtok(NULL, delim);
+        i++;
+    }
+    char* ret = strdup(arr[i-1]);
+    free(str);
+	return ret;
 }
+
 // Read a string from a pipe
-char* read_from_pipe(int fd) {
+char* read_from_pipe(int fd, int buff_size) {
 	// find out how many bytes we want to read
 	int n_bytes;
 	read(fd, &n_bytes, sizeof(int));
 	int read_count = 0;
     // Allocate a string to return (space for \0 is taken into account by the write function)
-	char* res = malloc((n_bytes + 1) * sizeof(*res));
-    // read until we read the whole message
-	while (read_count < n_bytes) {
-        char* curr = res + (read_count * sizeof(char));
-	    // try read exactly n bytes from the pipe
-        int old = read_count;
-        // update the read_cocunt by the result of read
-        read_count += read(fd, curr, n_bytes - old);
+	char* info = malloc((n_bytes + 1) * sizeof(*info));
+	// set how many times we must read from the buffer given the buff_size
+    int times = (n_bytes / buff_size) + 1;
+    for (int i = 0; i < times; i++) {
+        // the first n-1 times, read the full message
+        if (i < times -1) {
+            char* current = info + (i * buff_size);
+            read(fd, current, buff_size);
+        } else {
+            // the last time, read the remainder of the bytes in the file (if it is grater than 0)
+            int remainder = n_bytes % buff_size;
+            if (remainder) {
+                char* current = info + (i * buff_size);
+                read(fd, current, remainder);
+            }
+        }
     }
     // finally, return the whole message
-	return res;
+	return info;
 }
 
 // Write a sting to the pipe, by writing buff_size bytes each time

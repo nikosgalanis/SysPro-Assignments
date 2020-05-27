@@ -59,9 +59,8 @@ int main(int argc, char* argv[]) {
 	List dirs = create_list(compare_strings, free); //TODO: Maybe NULL for destroy
 	char* str;
 	// read the dirs from the pipe
-	// sleep (3);
 	while (true) {
-		str = read_from_pipe(reading);
+		str = read_from_pipe(reading, buff_size);
 		// break when "end" is sent by the parent
 		if (! strcmp(str, "end"))
 			break;
@@ -104,11 +103,10 @@ int main(int argc, char* argv[]) {
 			write_to_pipe(writing, buff_size, file_to_scan->d_name);
 			char* country_to_send = list_nth(dirs, i);
 			write_to_pipe(writing, buff_size, country_to_send);
-			// write_to_pipe(writing, buff_size, country_to_send);
 			// allocate size for the string that will temporary store the records
 			char* record = malloc(STRING_SIZE * sizeof(*record));
+			
 			// read all the contents of the files
-
 			while (fgets(record, STRING_SIZE, curr_file) != NULL) {
 				// If we have a patient that wants to enter
 				if (strstr(record, "ENTER")) {
@@ -185,50 +183,50 @@ int main(int argc, char* argv[]) {
 			hash_destroy(todays_diseases);
 		}
 	}
-	// int failed_queries = 0, success_queries = 0;
+	int failed_queries = 0, success_queries = 0;
 	// read queries until we break
-	// while (true) {
-	// 	// read the instruction from the pipe
-	// 	char* query = read_from_pipe(reading);
-	// 	// check if an exit command is given
-	// 	if (!strcmp(query, "/exit")) {
-	// 		// TODO: Maybe add to a function instead
-	// 		// free the memory occupied by our data structures
-	// 		hash_destroy(diseases_hash);
-	// 		hash_destroy(patients);
-	// 		// create a log file to store what we've achieved
-	// 		int log_fd;
-	// 		// TODO: Maybe mkdir()
-	// 		if ((log_fd = open(concat("../logs/log_file.", itoa(getpid())), O_CREAT | O_RDWR, 0666)) == -1) {
-	// 			perror("creating");
-	// 			exit(1);
-	// 		}
-	// 		// print all the dirs that we handled
-	// 		for (int i = 0; i < dirs->size; i++) {
-	// 			char* buff = concat((char*)list_nth(dirs, i), "\n");
-	// 			write(log_fd, buff, strlen(buff) + 1);
-	// 		}
-	// 		char* buff = malloc(STRING_SIZE * sizeof(*buff));
-	// 		sprintf(buff, "SUCCESS %d\n FAILED %d\n", success_queries, failed_queries);
-	// 		write(log_fd, buff, strlen(buff));
-	// 		free(buff);
-	// 		// close the log file descriptor
-	// 		close(log_fd);
-	// 		// close the pipes
-	// 		close(reading); close(writing);
-	// 		// free the list of the countries given
-	// 		destroy_list(dirs);
-	// 		// Finally, exit the worker
-	// 		exit(EXIT_SUCCESS); //TODO: Wait for the sigkill
-	// 	}
-	// 	// call the menu to analyze the query and return the result
-	// 	char* result = worker_menu(query, dirs, patients, diseases_hash);
-	// 	// check if an error has occured (returned null), thus we must not write in the pipe
-	// 	if (result) {
-	// 		success_queries++;
-	// 		write_to_pipe(writing, buff_size, result);
-	// 	} else {
-	// 		failed_queries++;
-	// 	}
-	// } 
+	while (true) {
+		// read the instruction from the pipe
+		char* query = read_from_pipe(reading, buff_size);
+		// check if an exit command is given
+		if (!strcmp(query, "/exit")) {
+			// TODO: Maybe add to a function instead
+			// free the memory occupied by our data structures
+			hash_destroy(diseases_hash);
+			hash_destroy(patients);
+			// create a log file to store what we've achieved
+			int log_fd;
+			// TODO: Maybe mkdir()
+			if ((log_fd = open(concat("../logs/log_file.", itoa(getpid())), O_CREAT | O_RDWR, 0666)) == -1) {
+				perror("creating");
+				exit(1);
+			}
+			// print all the dirs that we handled
+			for (int i = 0; i < dirs->size; i++) {
+				char* buff = concat((char*)list_nth(dirs, i), "\n");
+				write(log_fd, buff, strlen(buff) + 1);
+			}
+			char* buff = malloc(STRING_SIZE * sizeof(*buff));
+			sprintf(buff, "SUCCESS %d\n FAILED %d\n", success_queries, failed_queries);
+			write(log_fd, buff, strlen(buff));
+			free(buff);
+			// close the log file descriptor
+			close(log_fd);
+			// close the pipes
+			close(reading); close(writing);
+			// free the list of the countries given
+			destroy_list(dirs);
+			// Finally, wait forever until the parent sends a SIGKILL that will exit the worker
+			wait(NULL);
+		}
+		// call the menu to analyze the query and return the result
+		char* result = worker_menu(query, dirs, patients, diseases_hash);
+		// check if an error has occured (returned null), thus we must not write in the pipe
+		if (result) {
+			success_queries++;
+			write_to_pipe(writing, buff_size, result);
+		} else {
+			failed_queries++;
+		}
+	} 
 }

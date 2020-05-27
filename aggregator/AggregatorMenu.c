@@ -29,7 +29,7 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
                         // inform __only__ this worker for the query
                         write_to_pipe(writing[pos], buff_size, instruction);
                         // get his response and print it
-                        char* response = read_from_pipe(reading[pos]);
+                        char* response = read_from_pipe(reading[pos], buff_size);
                         fprintf(stdout, "%d\n", atoi(response));
                     } else {
                         fprintf(stderr, "Error with country provided");
@@ -51,7 +51,7 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
                 // read from all the pipes
                 for (int i = 0; i < n_workers; i++) { //TODO: Add select()
                     // read the worker's response
-                    char* worker_response = read_from_pipe(reading[i]);
+                    char* worker_response = read_from_pipe(reading[i], buff_size);
                     // add this to the total result
                     result += atoi(worker_response);
                 }
@@ -73,7 +73,7 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
                     // inform __only__ this worker for the query
                     write_to_pipe(writing[pos], buff_size, instruction);
                     // get his response and print it
-                    char* response = read_from_pipe(reading[pos]);
+                    char* response = read_from_pipe(reading[pos], buff_size);
                     fprintf(stdout, "%s\n", response);
                 } else {
                     fprintf(stderr, "Error with country provided");
@@ -92,7 +92,7 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
             }
             for (int i = 0; i < n_workers; i++) { //TODO: Add select()
                 // read the worker's response
-                char* worker_response = read_from_pipe(reading[i]);
+                char* worker_response = read_from_pipe(reading[i], buff_size);
                 // find the worker that will NOT return -
                 if (strcmp(worker_response, "-")) {
                     // print this result to the user
@@ -117,7 +117,7 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
                         // inform __only__ this worker for the query
                         write_to_pipe(writing[pos], buff_size, instruction);
                         // get his response and print it
-                        char* response = read_from_pipe(reading[pos]);
+                        char* response = read_from_pipe(reading[pos], buff_size);
                         fprintf(stdout, "%s\n", response);
                     } else {
                         fprintf(stderr, "Error with country provided");
@@ -130,7 +130,7 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
                 }
                 for (int i = 0; i < n_workers; i++) { //TODO: Add select()
                     // read the worker's response
-                    char* worker_response = read_from_pipe(reading[i]);
+                    char* worker_response = read_from_pipe(reading[i], buff_size);
                         // print this result to the user
                         fprintf(stdout, "%s\n", worker_response);
                     }
