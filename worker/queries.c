@@ -22,22 +22,25 @@ bool check_same_country(Pointer ent, Pointer count, Pointer dummy1, Pointer dumm
 	}
 }
 
-bool check_bigger_entry_date(Pointer p, Pointer d, Pointer dummy1, Pointer dummy2) {
-	Patient* patient = (Patient*)p;
+bool check_bigger_entry_date(Pointer ent, Pointer d, Pointer country, Pointer dummy2) {
+	BalancedTreeEntry entry = (BalancedTreeEntry)ent;
+	Patient* patient = entry->assigned_patient;
 	Date* date = (Date*)d;
-	return (compare_dates(patient->entry_date, *date) > 0);
+	return (compare_dates(patient->entry_date, *date) > 0 && !strcmp(country, patient->country));
 
 }
 
-bool check_bigger_exit_date(Pointer p, Pointer d, Pointer dummy1, Pointer dummy2) {
-	Patient* patient = (Patient*)p;
+bool check_bigger_exit_date(Pointer ent, Pointer d, Pointer country, Pointer dummy2) {
+	BalancedTreeEntry entry = (BalancedTreeEntry)ent;
+	Patient* patient = entry->assigned_patient;
 	Date* date = (Date*)d;
-	return (compare_dates(patient->exit_date, *date) > 0);
+	return (compare_dates(patient->exit_date, *date) > 0) && !strcmp(country, patient->country);
 
 }
 
-bool check_age_group(Pointer p, Pointer a, Pointer d1, Pointer d2) {
-	Patient* patient = (Patient*)p;
+bool check_age_group(Pointer ent, Pointer a, Pointer d1, Pointer d2) {
+	BalancedTreeEntry entry = (BalancedTreeEntry)ent;
+	Patient* patient = entry->assigned_patient;
 	Date* date1 = (Date*)d1;
 	Date* date2 = (Date*)d2;
 	int age = atoi((char*)a);
@@ -126,7 +129,8 @@ char* num_patient_admissions(char* disease, char* arg2, char* arg3, char* countr
 		return NULL;
 	}
 	// all the ones that are after date 2, except those that are after date 1
-	int res = balanced_tree_cond_traverse(disease_tree, check_bigger_entry_date, &d1, NULL, NULL) - balanced_tree_cond_traverse(disease_tree, check_bigger_entry_date, &d2, NULL, NULL);
+	int res = balanced_tree_cond_traverse(disease_tree, check_bigger_entry_date, &d1, country, NULL) - balanced_tree_cond_traverse(disease_tree, check_bigger_entry_date, &d2, country, NULL);
+
 	int len = strlen(country) + strlen(itoa(res)) + 3;
 	char* to_return = malloc(len * sizeof(*to_return));
 	sprintf(to_return, "%s %d\n", country, res);
@@ -159,6 +163,7 @@ void topk_age_ranges(int k, char* country, char* disease, char* day1, char* day2
 	Date d2 = string_to_date(day2);
 	BalancedTree disease_tree = hash_search(diseases_hash, disease)->item;
 	int age_gr1 = balanced_tree_cond_traverse(disease_tree, check_age_group, "20", &d1, &d2);
+	fprintf(stderr, "g1 %d\n", age_gr1);
 	int age_gr2 = balanced_tree_cond_traverse(disease_tree, check_age_group, "40", &d1, &d2);
 	int age_gr3 = balanced_tree_cond_traverse(disease_tree, check_age_group, "60", &d1, &d2);
 	int age_gr4 = balanced_tree_cond_traverse(disease_tree, check_age_group, "120", &d1, &d2);

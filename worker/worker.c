@@ -134,7 +134,7 @@ int main(int argc, char* argv[]) {
 						if (patient_entry == NULL) {
 							hash_insert(patients, p->id, p);
 						} else {
-							fprintf(stderr, "error\n");
+							// fprintf(stderr, "error\n");
 							failed++;
 						}
 						// search for the disease for the stats
@@ -190,7 +190,6 @@ int main(int argc, char* argv[]) {
 	while (true) {
 		// read the instruction from the pipe
 		char* query = read_from_pipe(reading, buff_size);
-		fprintf(stderr, "query in child is %s\n", query);
 		// check if an exit command is given
 		if (!strcmp(query, "/exit")) {
 			// TODO: Maybe add to a function instead
