@@ -75,9 +75,12 @@ bool recordPatientExit(char* info, HashTable patients, char* exit_str) {
 
 // This query is called by each worker for each country, thus the country argument will always be present
 int disease_frequency(char* virus, char* arg2, char* arg3, char* country, HashTable diseases_hash) {
+	char* a2 = strdup(arg2);
+	char* a3 = strdup(arg3);
 
-	Date d1 = string_to_date(arg2);
-	Date d2 = string_to_date(arg3);
+	Date d1 = string_to_date(a2);
+	Date d2 = string_to_date(a3);
+	free(a2); free(a3);
 	if (!check_valid_dates(d1, d2)) {
 		fprintf(stderr, "Wrong dates\n");
 		return FAILED;
@@ -90,8 +93,6 @@ int disease_frequency(char* virus, char* arg2, char* arg3, char* country, HashTa
 		// Insert the same country as a condition to the previous function.
 		BalancedTree tree = entry->item;
 		int g_than = total_nodes_grater_than(tree, &d1, check_same_country, country) - total_nodes_grater_than(tree, &d2, check_same_country, country);
-		// printf("For the virus %s, %d infected were found between the 2 given dates in %s\n", virus, g_than, country);
-		// printf("%s %d\n", virus, g_than);
 		return g_than;
 	}
 }
@@ -101,7 +102,7 @@ char* search_patient_record(char* r_id, HashTable patients) {
 	HashEntry result = hash_search(patients, r_id);
 	// if we do not find it just return NULL
 	if (result == NULL) 
-		return NULL;
+		return "-";
 	// else, construct the appropriate string to store the patient record
 	Patient* p = result->item;
 	char* entry_date = date_to_string(p->entry_date);
@@ -113,9 +114,12 @@ char* search_patient_record(char* r_id, HashTable patients) {
 }
 
 char* num_patient_admissions(char* disease, char* arg2, char* arg3, char* country, HashTable diseases_hash) {
-	// Convert the input strings to dates
-	Date d1 = string_to_date(arg2);
-	Date d2 = string_to_date(arg3);
+	// Convert the input strings to dates	char* a2 = strdup(arg2);
+	char* a2 = strdup(arg2);
+	char* a3 = strdup(arg3);
+	Date d1 = string_to_date(a2);
+	Date d2 = string_to_date(a3);
+	free(a2); free(a3);
 	BalancedTree disease_tree = hash_search(diseases_hash, disease)->item;
 	// If there is no such entry in the disease ht, then we do not have any patients here
 	if (disease_tree == NULL) {
@@ -123,15 +127,19 @@ char* num_patient_admissions(char* disease, char* arg2, char* arg3, char* countr
 	}
 	// all the ones that are after date 2, except those that are after date 1
 	int res = balanced_tree_cond_traverse(disease_tree, check_bigger_entry_date, &d1, NULL, NULL) - balanced_tree_cond_traverse(disease_tree, check_bigger_entry_date, &d2, NULL, NULL);
-	char* to_return = malloc(strlen(country) + strlen(itoa(res)) + 3);
-	snprintf(to_return, strlen(country) + strlen(itoa(res)) + 3, "%s %d\n", country, res);
+	int len = strlen(country) + strlen(itoa(res)) + 3;
+	char* to_return = malloc(len * sizeof(*to_return));
+	sprintf(to_return, "%s %d\n", country, res);
 	return to_return;
 }
 
 char* num_patient_discharges(char* disease, char* arg2, char* arg3, char* country, HashTable diseases_hash) {
-	// Convert the input strings to dates
-	Date d1 = string_to_date(arg2);
-	Date d2 = string_to_date(arg3);
+	// Convert the input strings to dates	char* a2 = strdup(arg2);
+	char* a2 = strdup(arg2);
+	char* a3 = strdup(arg3);
+	Date d1 = string_to_date(a2);
+	Date d2 = string_to_date(a3);
+	free(a2); free(a3);
 	BalancedTree disease_tree = hash_search(diseases_hash, disease)->item;
 	// If there is no such entry in the disease ht, then we do not have any patients here
 	if (disease_tree == NULL) {
@@ -139,12 +147,13 @@ char* num_patient_discharges(char* disease, char* arg2, char* arg3, char* countr
 	}
 	// all the ones that are after date 2, except those that are after date 1
 	int res = balanced_tree_cond_traverse(disease_tree, check_bigger_exit_date, &d1, NULL, NULL) - balanced_tree_cond_traverse(disease_tree, check_bigger_exit_date, &d2, NULL, NULL);
-	char* to_return = malloc(strlen(country) + strlen(itoa(res)) + 3);
-	snprintf(to_return, strlen(country) + strlen(itoa(res)) + 3, "%s %d\n", country, res);
+	int len = strlen(country) + strlen(itoa(res)) + 3;
+	char* to_return = malloc(len * sizeof(*to_return));
+	sprintf(to_return, "%s %d\n", country, res);
 	return to_return;
 }
 
-char* topk_age_ranges(int k, char* country, char* disease, char* day1, char* day2, HashTable diseases_hash) {
+void topk_age_ranges(int k, char* country, char* disease, char* day1, char* day2, HashTable diseases_hash, int write, int buff_size) {
 	// Convert the input strings to dates
 	Date d1 = string_to_date(day1);
 	Date d2 = string_to_date(day2);
@@ -159,12 +168,18 @@ char* topk_age_ranges(int k, char* country, char* disease, char* day1, char* day
 	heap_insert(heap, age_gr2, "20-40");
 	heap_insert(heap, age_gr3, "40-60");
 	heap_insert(heap, age_gr4, "60+");
-	char* ret = malloc(50 * sizeof(*ret));
-	for (int i = 0; i < k && i < 4; i++) {
+	// define how many times we will write in the pipes, and send this number so the parent is aware too
+	
+	int k_ret = (k < 4) ? k : 4;
+	write_to_pipe(write, buff_size, itoa(k_ret));
+	char* ret = malloc(13 * sizeof(*ret));
+	for (int i = 0; i <k_ret; i++) {
 		HeapEntry ent = pop(heap);
-		sprintf(ret, "%s: %d%%\n", ent->key, 100 * ent->priority / total); 
+		snprintf(ret, 13,"%5s: %3d%%\n", ent->key, 100 * ent->priority / total); 
+		// fprintf(stderr, "%s\n", ret);
+		write_to_pipe(write, buff_size, ret);
 		free(ent);
 	}
+	free(ret);
 	destroy_heap(heap);
-	return ret;
 }

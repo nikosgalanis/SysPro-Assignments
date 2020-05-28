@@ -26,6 +26,7 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
                     // and find the his id in our arrays
                     int pos = get_pos_from_pid(id, workers_ids, n_workers);
                     if (pos != FAILED) {
+                        fprintf(stderr, "heeeere\n");
                         // inform __only__ this worker for the query
                         write_to_pipe(writing[pos], buff_size, instruction);
                         // get his response and print it
@@ -61,7 +62,7 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
         }
 		else if(strstr(instruction, "/topk-AgeRanges")) {
             // the country is the 2nd word in our string
-            char* country = nth_word(instruction, 2);
+            char* country = nth_word(instruction, 3);
             // search for the worker that has taken this country
             HashEntry ent = hash_search(hash, country);
             if (ent) {
@@ -72,9 +73,13 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
                 if (pos != FAILED) {
                     // inform __only__ this worker for the query
                     write_to_pipe(writing[pos], buff_size, instruction);
+                    // find how many times we will read from the pipe
+                    int k = atoi(read_from_pipe(reading[pos], buff_size));
                     // get his response and print it
-                    char* response = read_from_pipe(reading[pos], buff_size);
-                    fprintf(stdout, "%s\n", response);
+                    for (int i = 0; i < k; i++) {
+                        char* response = read_from_pipe(reading[pos], buff_size);
+                        fprintf(stderr, "%s", response);
+                    }
                 } else {
                     fprintf(stderr, "Error with country provided");
                     continue;
@@ -122,17 +127,23 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
                     } else {
                         fprintf(stderr, "Error with country provided");
                         continue;
+                    }
                 }
             } else {
+                fprintf(stderr, "heeeere\n");
                 // inform all the workers that we request an admission query
                 for (int i = 0; i < n_workers; i++) {
                     write_to_pipe(writing[i], buff_size, instruction);
                 }
                 for (int i = 0; i < n_workers; i++) { //TODO: Add select()
-                    // read the worker's response
-                    char* worker_response = read_from_pipe(reading[i], buff_size);
-                        // print this result to the user
-                        fprintf(stdout, "%s\n", worker_response);
+                    // read how many responses the worker is gonna send
+                    int n_res = atoi(read_from_pipe(reading[i], buff_size));
+                    // for each of the string that the worker wants to print
+                    for (int j = 0; j < n_res; j++) {
+                        // read and print the worker's response
+                        char* res = read_from_pipe(reading[i], buff_size);
+                        fprintf(stdout, "%s", res);
+                        free(res);
                     }
                 }
             }

@@ -88,7 +88,6 @@ char* read_from_pipe(int fd, int buff_size) {
 	// find out how many bytes we want to read
 	int n_bytes;
 	read(fd, &n_bytes, sizeof(int));
-	int read_count = 0;
     // Allocate a string to return (space for \0 is taken into account by the write function)
 	char* info = malloc((n_bytes + 1) * sizeof(*info));
 	// set how many times we must read from the buffer given the buff_size
@@ -107,6 +106,7 @@ char* read_from_pipe(int fd, int buff_size) {
             }
         }
     }
+	info[n_bytes] = '\0';
     // finally, return the whole message
 	return info;
 }
@@ -142,7 +142,7 @@ void write_to_pipe(int fd, int buff_size, char* info) {
 void print_list_contents(Pointer ent, Pointer d1, Pointer d2, Pointer d3, Pointer d4) {
     HashEntry entry = (HashEntry)ent;
     if (entry) {
-		printf("%12s %d\n", entry->key, *(int*)entry->item);
+		printf("%15s %d\n", entry->key, *(int*)entry->item);
     }
 }
 

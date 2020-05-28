@@ -4,4 +4,4 @@
 #include "LinkedList.h"
 #include "Queries.h"
 
-char* worker_menu(char* query, List dirs, HashTable Patients,HashTable diseases_hash);
+bool worker_menu(char* query, List dirs, HashTable Patients,HashTable diseases_hash, int writing, int buff_size);

@@ -30,7 +30,7 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     // arrays to store the file descs coming from the pipes for reading and writing
     int reading[n_workers]; int writing[n_workers];
     // array to store the pids of the childs
-    pid_t workers_ids[n_workers];
+    pid_t* workers_ids = malloc(n_workers * sizeof(*workers_ids));
     char* names_1[n_workers];
     char* names_2[n_workers];
     for (int i = 0; i < n_workers; i++) {
@@ -38,8 +38,9 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
         // hold the name of the 2 named pipes
         names_1[i] = concat("../tmp/fifo_1_", itoa(i));
         names_2[i] = concat("../tmp/fifo_2_", itoa(i));
-        if (pid != 0) {
-            printf("parent\n");
+        if (pid > 0) {
+            fprintf(stderr, "parent of %d\n", pid);
+
             // the parent saves the child's pid
             workers_ids[i] = pid;
             // Create __two__ named pipes, so each process can write in one of them
@@ -55,9 +56,9 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
                     perror("reciever: mkfifo");
                     exit(EXIT_FAILURE);
                 }
+            }
         } else {
             // The child does the rest
-            }
             fprintf(stderr, "damn it\n");
             // call an exec function, in order to redirect the child in the worker file
             execl("../worker/worker", "worker", names_1[i], names_2[i], itoa(buff_size), input_dir, NULL);
@@ -66,7 +67,6 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
             exit(EXIT_FAILURE);
         }
     }
-
     // open the pipes and store the descriptors in the arrays that we have allocated
     for (int i = 0; i < n_workers; i++) {
         char* name1 = concat("../tmp/fifo_1_", itoa(i));
@@ -149,7 +149,7 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     // close the input directory
     closedir(input);
     // call the menu to get queries from the user and pass them to the workers
-    // menu(reading, writing, n_workers, workers_ids, buff_size, dirs_to_workers);
+    menu(reading, writing, n_workers, workers_ids, buff_size, dirs_to_workers);
     //the menu returns when the user has requested to exit the program
 
     //free the hash table of the workers-countries
