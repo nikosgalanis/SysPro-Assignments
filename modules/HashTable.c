@@ -158,7 +158,7 @@ void hash_destroy(HashTable ht) {
 			HashNode next_node = current->next;
 			// destroy all the entries in the node
 			for (int pos = 0; pos < ht->bucket_max_entries; pos++) {
-				if (current->bucket[pos]->item != empty)
+				if (current->bucket[pos]->item != empty && ht->destroy_items != NULL)
 					ht->destroy_items(current->bucket[pos]->item);
 				free(current->bucket[pos]);
 			}

@@ -99,7 +99,7 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
                 i--;
     }
     // Create a hash table to store which dirs are held by which workers (key: pid, item: list of countries)
-    HashTable dirs_to_workers = hash_create(n_workers, hash_strings, BUCKET_SIZE, free); //TODO: Check destroy fn
+    HashTable dirs_to_workers = hash_create(n_workers, hash_strings, BUCKET_SIZE, NULL); //TODO: Check destroy fn
     // find out the correct way to split the dirs
     int split_no = n_dirs / n_workers;
     int remainder = n_dirs % n_workers;
@@ -136,38 +136,40 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
             char* name = read_from_pipe(reading[i], buff_size);
             char* country = read_from_pipe(reading[i], buff_size);
             int n_diseases = atoi(read_from_pipe(reading[i], buff_size));
-            // fprintf(stdout, "%s\n%s\n", name, country);
+            fprintf(stdout, "%s\n%s\n", name, country);
             for (int k = 0; k < n_diseases; k++) {
+                char* disease = read_from_pipe(reading[i], buff_size);
+                fprintf(stdout, "%s\n", disease);
                 char* info = read_from_pipe(reading[i], buff_size);
-                // fprintf(stdout, "%s\n", info);
+                fprintf(stdout, "%s\n", info);
             }
-        // fprintf(stdout, "\n\n");
+            fprintf(stdout, "\n");
         }
     }
     // close the input directory
-    fprintf(stderr, "here\n");
     closedir(input);
-    // // call the menu to get queries from the user and pass them to the workers
+    // call the menu to get queries from the user and pass them to the workers
     // menu(reading, writing, n_workers, workers_ids, buff_size, dirs_to_workers);
-    // the menu returns when the user has requested to exit the program
-    // free the hash table of the workers-countries
+    //the menu returns when the user has requested to exit the program
+
+    //free the hash table of the workers-countries
     hash_destroy(dirs_to_workers);
-    // for (int i = 0; i < n_workers; i++) {
-    //     kill(workers_ids[i], SIGKILL);
-    // }
+    for (int i = 0; i < n_workers; i++) {
+        kill(workers_ids[i], SIGKILL);
+    }
+    printf("here\n");
     //TODO: Send sigkill to all the workers and wait for them to end
     // for (int i = 0; i < n_workers; i++)
     //     wait(NULL);
 
     // Delete all the pipes that we've opened
     for (int i = 0; i < n_workers; i++) {
-        // close(reading[i]);
-        // close(writing[i]);
-        fprintf(stderr, "----------------------------------%s-------------------------- \n", names_1[i]);
-        // unlink(names_1[i]);
-        // unlink(names_2[i]);
-
+        unlink(names_1[i]);
+        unlink(names_2[i]);
     }
-    wait(&workers_ids[0]);
+
+    // wait(&workers_ids[0]);
+    pid_t wpid; int status = 0;
+    while ((wpid = wait(&status)) > 0);
     // we are now ready to return to the main function to wrap it up
 }
