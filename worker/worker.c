@@ -9,6 +9,7 @@
 #include "Queries.h"
 #include <sys/types.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <fcntl.h>
 
 void print_todays_stats(Pointer ent, Pointer buffer_size, Pointer f_desc, Pointer dummy1, Pointer dummy2) {
@@ -48,7 +49,7 @@ int main(int argc, char* argv[]) {
 	writing = open(argv[1], O_WRONLY, 0666);
 	reading = open(argv[2], O_RDONLY, 0666);
 	// Variables to stroe statistics for records.
-	int total = 0; int failed = 0;
+	int success = 0; int failed = 0;
 	// Create a hash table to store all the different diseases
 	HashTable diseases_hash = hash_create(HASH_SIZE, hash_strings, BUCKET_SIZE, balanced_tree_destroy);
 	// We are going to use one extra hashtable, in order to quickly search if the patient allready exists
@@ -162,15 +163,19 @@ int main(int argc, char* argv[]) {
 							age_groups[3]++;
 						// update the hash entry
 						hash_update(todays_diseases, p->disease, age_groups);
+						success++;
+					} else {
+						failed++;
 					}
 				} else {
 					// else, the patient must exit, with exit date the name of the file
 					if (recordPatientExit(record, patients, temp_name) == false) {
 						// fprintf(stderr, "error\n");
 						failed++;
+					} else {
+						success++;
 					}
 				}
-				total++;
 			}
 			// inform the parent how many diseases to read
 			char* n_dis = itoa(todays_diseases->items);
@@ -183,37 +188,39 @@ int main(int argc, char* argv[]) {
 			hash_destroy(todays_diseases);
 		}
 	}
-	fprintf(stderr, "%s exiting\n", argv[1]);
-	// while(true);
-	int failed_queries = 0, success_queries = 0;
 	// read queries until we break
 	while (true) {
 		// read the instruction from the pipe
 		char* query = read_from_pipe(reading, buff_size);
+		fprintf(stderr, "query is %s\n", query);
 		// check if an exit command is given
-		if (!strcmp(query, "/exit")) {
+		if (strstr(query, "/exit")) {
 			// TODO: Maybe add to a function instead
 			// free the memory occupied by our data structures
 			hash_destroy(diseases_hash);
-			hash_destroy(patients);
+			// hash_destroy(patients);
+
+			// create a directory to store our log files
+			mkdir("output", ACCESSPERMS);
+
 			// create a log file to store what we've achieved
-			int log_fd;
-			// TODO: Maybe mkdir()
-			if ((log_fd = open(concat("../logs/log_file.", itoa(getpid())), O_CREAT | O_RDWR, 0666)) == -1) {
+			char* f_name = concat("../logs/log_file.", itoa(getpid()));
+			FILE* log_file = fopen(f_name, "w+");
+			fprintf(stderr, "%s\n", f_name);
+			// free(f_name);
+			if (log_file == NULL) {
 				perror("creating");
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
 			// print all the dirs that we handled
 			for (int i = 0; i < dirs->size; i++) {
-				char* buff = concat((char*)list_nth(dirs, i), "\n");
-				write(log_fd, buff, strlen(buff) + 1);
+				char* country = list_nth(dirs, i);
+				fprintf(log_file, "%s\n", country);
 			}
-			char* buff = malloc(STRING_SIZE * sizeof(*buff));
-			sprintf(buff, "SUCCESS %d\n FAILED %d\n", success_queries, failed_queries);
-			write(log_fd, buff, strlen(buff));
-			free(buff);
+			// write the total query stats
+			fprintf(log_file, "\nTOTAL %d\nSUCCESS %d\n FAILED %d\n", (success + failed), success, failed);
 			// close the log file descriptor
-			close(log_fd);
+			fclose(log_file);
 			// close the pipes
 			close(reading); close(writing);
 			// free the list of the countries given
@@ -225,10 +232,9 @@ int main(int argc, char* argv[]) {
 		bool result = worker_menu(query, dirs, patients, diseases_hash, writing, buff_size);
 		// check if an error has occured (returned null), thus we must not write in the pipe
 		if (result) {
-			success_queries++;
-			// write_to_pipe(writing, buff_size, result);
+			success++;
 		} else {
-			failed_queries++;
+			failed++;
 		}
 	} 
 }

@@ -26,7 +26,6 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
                     // and find the his id in our arrays
                     int pos = get_pos_from_pid(id, workers_ids, n_workers);
                     if (pos != FAILED) {
-                        fprintf(stderr, "heeeere\n");
                         // inform __only__ this worker for the query
                         write_to_pipe(writing[pos], buff_size, instruction);
                         // get his response and print it
@@ -78,7 +77,7 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
                     // get his response and print it
                     for (int i = 0; i < k; i++) {
                         char* response = read_from_pipe(reading[pos], buff_size);
-                        fprintf(stderr, "%s", response);
+                        fprintf(stdout, "%s", response);
                     }
                 } else {
                     fprintf(stderr, "Error with country provided");
@@ -130,7 +129,6 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
                     }
                 }
             } else {
-                fprintf(stderr, "heeeere\n");
                 // inform all the workers that we request an admission query
                 for (int i = 0; i < n_workers; i++) {
                     write_to_pipe(writing[i], buff_size, instruction);
@@ -153,6 +151,7 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
             for (int i = 0; i < n_workers; i++) {
                 write_to_pipe(writing[i], buff_size, instruction);
             }
+            sleep(2);
             // TODO: send a sigkill to everyone
 			return;
 		}
