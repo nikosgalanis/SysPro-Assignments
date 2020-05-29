@@ -140,16 +140,16 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
             char* country = read_from_pipe(reading[i], buff_size);
             char* n_dis = read_from_pipe(reading[i], buff_size);
             int n_diseases = atoi(n_dis);
-            // fprintf(stdout, "%s\n%s\n", name, country);
+            fprintf(stdout, "%s\n%s\n", name, country);
             for (int k = 0; k < n_diseases; k++) {
                 char* disease = read_from_pipe(reading[i], buff_size);
-                // fprintf(stdout, "%s\n", disease);
+                fprintf(stdout, "%s\n", disease);
                 free(disease);
                 char* info = read_from_pipe(reading[i], buff_size);
-                // fprintf(stdout, "%s\n", info);
+                fprintf(stdout, "%s\n", info);
                 free(info);
             }
-            // fprintf(stdout, "\n");
+            fprintf(stdout, "\n");
             free(name); 
             free(country);
             free(n_dis);

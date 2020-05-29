@@ -133,7 +133,7 @@ char* num_patient_admissions(char* disease, char* arg2, char* arg3, char* countr
 
 	int len = strlen(country) + strlen(itoa(res)) + 3;
 	char* to_return = malloc(len * sizeof(*to_return));
-	sprintf(to_return, "%s %d\n", country, res);
+	sprintf(to_return, "%15s %d\n", country, res);
 	return to_return;
 }
 
@@ -153,7 +153,7 @@ char* num_patient_discharges(char* disease, char* arg2, char* arg3, char* countr
 	int res = balanced_tree_cond_traverse(disease_tree, check_bigger_exit_date, &d1, NULL, NULL) - balanced_tree_cond_traverse(disease_tree, check_bigger_exit_date, &d2, NULL, NULL);
 	int len = strlen(country) + strlen(itoa(res)) + 3;
 	char* to_return = malloc(len * sizeof(*to_return));
-	sprintf(to_return, "%s %d\n", country, res);
+	sprintf(to_return, "%15s %d\n", country, res);
 	return to_return;
 }
 
@@ -163,7 +163,6 @@ void topk_age_ranges(int k, char* country, char* disease, char* day1, char* day2
 	Date d2 = string_to_date(day2);
 	BalancedTree disease_tree = hash_search(diseases_hash, disease)->item;
 	int age_gr1 = balanced_tree_cond_traverse(disease_tree, check_age_group, "20", &d1, &d2);
-	fprintf(stderr, "g1 %d\n", age_gr1);
 	int age_gr2 = balanced_tree_cond_traverse(disease_tree, check_age_group, "40", &d1, &d2);
 	int age_gr3 = balanced_tree_cond_traverse(disease_tree, check_age_group, "60", &d1, &d2);
 	int age_gr4 = balanced_tree_cond_traverse(disease_tree, check_age_group, "120", &d1, &d2);
@@ -181,7 +180,6 @@ void topk_age_ranges(int k, char* country, char* disease, char* day1, char* day2
 	for (int i = 0; i <k_ret; i++) {
 		HeapEntry ent = pop(heap);
 		snprintf(ret, 13,"%5s: %3d%%\n", ent->key, 100 * ent->priority / total); 
-		// fprintf(stderr, "%s\n", ret);
 		write_to_pipe(write, buff_size, ret);
 		free(ent);
 	}

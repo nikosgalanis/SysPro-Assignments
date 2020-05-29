@@ -76,8 +76,7 @@ bool worker_menu(char* qu, List dirs, HashTable patients, HashTable diseases_has
         else 
             return true;
     }
-    else if (strstr(query, "/numPatientAdmissions") || strstr(query, "/numPatientDischarges")) {
-        fprintf(stderr, "query in child is %s\n", query);
+    else if (strstr(query, "/numPatientAdmissions")) {
         if (n_words(query) < 4 || n_words(query) > 5) {
             fprintf(stderr, "error\n");
             free(qu);
@@ -102,7 +101,8 @@ bool worker_menu(char* qu, List dirs, HashTable patients, HashTable diseases_has
         }
         else {
             // if we wna to send many responses, inform the parent how many of them we're gonna store
-            write_to_pipe(write, buffsize, itoa(dirs->size));
+            char* n = itoa(dirs->size);
+            write_to_pipe(write, buffsize, n);
             // for each one of them
             for (int i = 0; i < dirs->size; i++) {
                 // call the query function with a specific country
@@ -112,6 +112,47 @@ bool worker_menu(char* qu, List dirs, HashTable patients, HashTable diseases_has
                 free(result);
             }
             free(qu);
+            free(n);
+            return true;
+        }
+    } 
+    else if (strstr(query, "/numPatientDischarges")) {
+        if (n_words(query) < 4 || n_words(query) > 5) {
+            fprintf(stderr, "error\n");
+            free(qu);
+            return false;
+        }
+        char* q = strtok(query, delim);
+        if (strcmp(q, "/numPatientAdmissions") || strcmp(q, "/numPatientDischarges")) {
+            free(qu);
+            return false;
+        }
+        char* virus = strtok(NULL, delim);
+        char* arg2 = strtok(NULL, delim);
+        char* arg3 = strtok(NULL, delim);
+        char* country = strtok(NULL, delim);
+        // If the query is specified for 1 country
+        if (country) {
+            // just write it to the pipe
+            char* result = num_patient_admissions(virus, arg2, arg3, country, diseases_hash);
+            write_to_pipe(write, buffsize, result);
+            free(result);
+            return true;
+        }
+        else {
+            // if we wna to send many responses, inform the parent how many of them we're gonna store
+            char* n = itoa(dirs->size);
+            write_to_pipe(write, buffsize, n);
+            // for each one of them
+            for (int i = 0; i < dirs->size; i++) {
+                // call the query function with a specific country
+                char* curr_country = list_nth(dirs, i);
+                char* result = num_patient_discharges(virus, arg2, arg3, curr_country, diseases_hash);
+                write_to_pipe(write, buffsize, result);
+                free(result);
+            }
+            free(qu);
+            free(n);
             return true;
         }
     } else {

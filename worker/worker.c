@@ -42,7 +42,6 @@ void print_todays_stats(Pointer ent, Pointer buffer_size, Pointer f_desc, Pointe
 int main(int argc, char* argv[]) {
 	// Get the pipe names from the args, and open them:
 	// 1st for writing, 2nd for reading
-	fprintf(stderr, "child %s\n", argv[1]);
 	int reading, writing;
 	int buff_size = atoi(argv[3]);
 	char* input_dir = concat(argv[4], "/");
@@ -192,7 +191,6 @@ int main(int argc, char* argv[]) {
 	while (true) {
 		// read the instruction from the pipe
 		char* query = read_from_pipe(reading, buff_size);
-		fprintf(stderr, "query is %s\n", query);
 		// check if an exit command is given
 		if (strstr(query, "/exit")) {
 			// TODO: Maybe add to a function instead
@@ -206,7 +204,6 @@ int main(int argc, char* argv[]) {
 			// create a log file to store what we've achieved
 			char* f_name = concat("../logs/log_file.", itoa(getpid()));
 			FILE* log_file = fopen(f_name, "w+");
-			fprintf(stderr, "%s\n", f_name);
 			// free(f_name);
 			if (log_file == NULL) {
 				perror("creating");
