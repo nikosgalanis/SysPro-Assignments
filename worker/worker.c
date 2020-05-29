@@ -67,171 +67,177 @@ int main(int argc, char* argv[]) {
 		list_insert(dirs, str);
 
 	}
-	// inform the parent how many stat strings he will read
-	int n_files = n_files_in_worker(input_dir, dirs);
-	write_to_pipe(writing, buff_size, itoa(n_files));
-	// for every directory/country that the worker must parse
-	for (int i = 0; i < dirs->size; i++) {
-		// find the dir name
-		char* temp_dir = concat(input_dir, list_nth(dirs, i));
-		char* directory = concat(temp_dir, "/");
-		// open it to access its data
-		DIR* dir;
-		if ((dir = opendir(directory)) == NULL) {
-			fprintf(stderr, "Worker %d unable to locate directory %s\n", getpid(), directory);
-			exit(EXIT_FAILURE);
-		}
-		struct dirent* file_to_scan;
-		// Traverse all the files in the directory 
-		while ((file_to_scan = readdir(dir)) != NULL) {
-			// Ignore the . and .. dirs
-			if (!strcmp(file_to_scan->d_name, ".") || !strcmp(file_to_scan->d_name, ".."))
-				continue;
-			// create a hash table to store thbe statistics needed for each file.
-			HashTable todays_diseases = hash_create(HASH_SIZE, hash_strings, BUCKET_SIZE, free);
-			// hold the old name of the file as the patients' country
-			char* temp_name = file_to_scan->d_name;
-			// get a full path to the file to open it
-			char* file_name = concat(directory, temp_name);
-			// open the file that we want to parse
-			FILE* curr_file = fopen(file_name, "r");
-			if (curr_file == NULL) {
-				perror("open");
-			 	exit(EXIT_FAILURE);
-			}
-			// Begin thje writing of the stats in the pipe
-			write_to_pipe(writing, buff_size, temp_name);
-			char* country_to_send = list_nth(dirs, i);
-			write_to_pipe(writing, buff_size, country_to_send);
-			// allocate size for the string that will temporary store the records
-			char* record = malloc(STRING_SIZE * sizeof(*record));
-			
-			// read all the contents of the files
-			while (fgets(record, STRING_SIZE, curr_file) != NULL) {
-				// If we have a patient that wants to enter
-				if (strstr(record, "ENTER")) {
-					// Create the entry, and store the age group that it belongs
-					Patient* p = create_patient(record, country_to_send, temp_name);
-					// Check if everything is ok
-					if (p) {
-						Date tree_key = p->entry_date;
-						HashEntry disease_search_result = hash_search(diseases_hash, p->disease);
-						if(disease_search_result != NULL) {
-							BalancedTreeEntry new_tree_entry = create_balanced_tree_entry(tree_key, p);
-							BalancedTree result_tree = disease_search_result->item;
-							balanced_tree_insert(result_tree, new_tree_entry);
-						}
-						// If we do not find the entry, then we insert it, with an empty tree as a key
-						else  {
-							BalancedTree result_tree = create_balanced_tree(compare, NULL);
-							hash_insert(diseases_hash, p->disease, result_tree);
-							BalancedTreeEntry new_tree_entry = create_balanced_tree_entry(tree_key, p);
-							balanced_tree_insert(result_tree, new_tree_entry);
-						}
-						// Search for the patient in the patients ht. If a patient with the same id is found
-						// print an error. Else, just insert the pointer to the patient record in the hash.
-						HashEntry patient_entry = hash_search(patients, p->id);
-						if (patient_entry == NULL) {
-							hash_insert(patients, p->id, p);
-						} else {
-							// fprintf(stderr, "error\n");
-							failed++;
-						}
-						// search for the disease for the stats
-						HashEntry todays_disease_result = hash_search(todays_diseases, p->disease);
-						int* age_groups;
-						if (todays_disease_result != NULL) {
-							//if we find it then we want access to the age groups array
-							age_groups = (int*)todays_disease_result->item;
-						} else {
-							//if it is the first time that we see that disease then we must initialize a lot of stuff
-							age_groups = malloc(4 * sizeof(*age_groups));
-							for (int k = 0; k < 4; k++)
-								age_groups[k] = 0;
-							
-							hash_insert(todays_diseases, p->disease, age_groups);
-						}
-						// update the stats
-						if (p->age < 20) 
-							age_groups[0]++;
-						else if (p->age < 40)
-							age_groups[1]++;
-						else if (p->age < 60)
-							age_groups[2]++;
-						else 
-							age_groups[3]++;
-						// update the hash entry
-						hash_update(todays_diseases, p->disease, age_groups);
-						success++;
-					} else {
-						failed++;
-					}
-				} else {
-					// else, the patient must exit, with exit date the name of the file
-					if (recordPatientExit(record, patients, temp_name) == false) {
-						// fprintf(stderr, "error\n");
-						failed++;
-					} else {
-						success++;
-					}
-				}
-			}
-			// inform the parent how many diseases to read
-			char* n_dis = itoa(todays_diseases->items);
-			write_to_pipe(writing, buff_size, n_dis);
-			// traverse the ht to send the stats to the pipe
-			hash_traverse(todays_diseases, print_todays_stats, &buff_size, &writing, NULL);
-			// close the file that we just parsed
-			fclose(curr_file);
-			// destroy the ht for this file, in order to avoid leaks
-			hash_destroy(todays_diseases);
-		}
-	}
-	// read queries until we break
-	while (true) {
-		// read the instruction from the pipe
-		char* query = read_from_pipe(reading, buff_size);
-		// check if an exit command is given
-		if (strstr(query, "/exit")) {
-			// TODO: Maybe add to a function instead
-			// free the memory occupied by our data structures
-			hash_destroy(diseases_hash);
-			// hash_destroy(patients);
-
-			// create a directory to store our log files
-			mkdir("output", ACCESSPERMS);
-
-			// create a log file to store what we've achieved
-			char* f_name = concat("../logs/log_file.", itoa(getpid()));
-			FILE* log_file = fopen(f_name, "w+");
-			// free(f_name);
-			if (log_file == NULL) {
-				perror("creating");
+	// proceed only if the worker is assigned with at least one country
+	if (!is_empty(dirs)) {
+		// inform the parent how many stat strings he will read
+		int n_files = n_files_in_worker(input_dir, dirs);
+		write_to_pipe(writing, buff_size, itoa(n_files));
+		// for every directory/country that the worker must parse
+		for (int i = 0; i < dirs->size; i++) {
+			// find the dir name
+			char* temp_dir = concat(input_dir, list_nth(dirs, i));
+			char* directory = concat(temp_dir, "/");
+			// open it to access its data
+			DIR* dir;
+			if ((dir = opendir(directory)) == NULL) {
+				fprintf(stderr, "Worker %d unable to locate directory %s\n", getpid(), directory);
 				exit(EXIT_FAILURE);
 			}
-			// print all the dirs that we handled
-			for (int i = 0; i < dirs->size; i++) {
-				char* country = list_nth(dirs, i);
-				fprintf(log_file, "%s\n", country);
+			struct dirent* file_to_scan;
+			// Traverse all the files in the directory 
+			while ((file_to_scan = readdir(dir)) != NULL) {
+				// Ignore the . and .. dirs
+				if (!strcmp(file_to_scan->d_name, ".") || !strcmp(file_to_scan->d_name, ".."))
+					continue;
+				// create a hash table to store thbe statistics needed for each file.
+				HashTable todays_diseases = hash_create(HASH_SIZE, hash_strings, BUCKET_SIZE, free);
+				// hold the old name of the file as the patients' country
+				char* temp_name = file_to_scan->d_name;
+				// get a full path to the file to open it
+				char* file_name = concat(directory, temp_name);
+				// open the file that we want to parse
+				FILE* curr_file = fopen(file_name, "r");
+				if (curr_file == NULL) {
+					perror("open");
+					exit(EXIT_FAILURE);
+				}
+				// Begin thje writing of the stats in the pipe
+				write_to_pipe(writing, buff_size, temp_name);
+				char* country_to_send = list_nth(dirs, i);
+				write_to_pipe(writing, buff_size, country_to_send);
+				// allocate size for the string that will temporary store the records
+				char* record = malloc(STRING_SIZE * sizeof(*record));
+				
+				// read all the contents of the files
+				while (fgets(record, STRING_SIZE, curr_file) != NULL) {
+					// If we have a patient that wants to enter
+					if (strstr(record, "ENTER")) {
+						// Create the entry, and store the age group that it belongs
+						Patient* p = create_patient(record, country_to_send, temp_name);
+						// Check if everything is ok
+						if (p) {
+							Date tree_key = p->entry_date;
+							HashEntry disease_search_result = hash_search(diseases_hash, p->disease);
+							if(disease_search_result != NULL) {
+								BalancedTreeEntry new_tree_entry = create_balanced_tree_entry(tree_key, p);
+								BalancedTree result_tree = disease_search_result->item;
+								balanced_tree_insert(result_tree, new_tree_entry);
+							}
+							// If we do not find the entry, then we insert it, with an empty tree as a key
+							else  {
+								BalancedTree result_tree = create_balanced_tree(compare, NULL);
+								hash_insert(diseases_hash, p->disease, result_tree);
+								BalancedTreeEntry new_tree_entry = create_balanced_tree_entry(tree_key, p);
+								balanced_tree_insert(result_tree, new_tree_entry);
+							}
+							// Search for the patient in the patients ht. If a patient with the same id is found
+							// print an error. Else, just insert the pointer to the patient record in the hash.
+							HashEntry patient_entry = hash_search(patients, p->id);
+							if (patient_entry == NULL) {
+								hash_insert(patients, p->id, p);
+							} else {
+								// fprintf(stderr, "error\n");
+								failed++;
+							}
+							// search for the disease for the stats
+							HashEntry todays_disease_result = hash_search(todays_diseases, p->disease);
+							int* age_groups;
+							if (todays_disease_result != NULL) {
+								//if we find it then we want access to the age groups array
+								age_groups = (int*)todays_disease_result->item;
+							} else {
+								//if it is the first time that we see that disease then we must initialize a lot of stuff
+								age_groups = malloc(4 * sizeof(*age_groups));
+								for (int k = 0; k < 4; k++)
+									age_groups[k] = 0;
+								
+								hash_insert(todays_diseases, p->disease, age_groups);
+							}
+							// update the stats
+							if (p->age < 20) 
+								age_groups[0]++;
+							else if (p->age < 40)
+								age_groups[1]++;
+							else if (p->age < 60)
+								age_groups[2]++;
+							else 
+								age_groups[3]++;
+							// update the hash entry
+							hash_update(todays_diseases, p->disease, age_groups);
+							success++;
+						} else {
+							failed++;
+						}
+					} else {
+						// else, the patient must exit, with exit date the name of the file
+						if (recordPatientExit(record, patients, temp_name) == false) {
+							// fprintf(stderr, "error\n");
+							failed++;
+						} else {
+							success++;
+						}
+					}
+				}
+				// inform the parent how many diseases to read
+				char* n_dis = itoa(todays_diseases->items);
+				write_to_pipe(writing, buff_size, n_dis);
+				// traverse the ht to send the stats to the pipe
+				hash_traverse(todays_diseases, print_todays_stats, &buff_size, &writing, NULL);
+				// close the file that we just parsed
+				fclose(curr_file);
+				// destroy the ht for this file, in order to avoid leaks
+				hash_destroy(todays_diseases);
 			}
-			// write the total query stats
-			fprintf(log_file, "\nTOTAL %d\nSUCCESS %d\n FAILED %d\n", (success + failed), success, failed);
-			// close the log file descriptor
-			fclose(log_file);
-			// close the pipes
-			close(reading); close(writing);
-			// free the list of the countries given
-			destroy_list(dirs);
-			// Finally, wait forever until the parent sends a SIGKILL that will exit the worker
-			while(true);
 		}
-		// call the menu to analyze the query and return the result
-		bool result = worker_menu(query, dirs, patients, diseases_hash, writing, buff_size);
-		// check if an error has occured (returned null), thus we must not write in the pipe
-		if (result) {
-			success++;
-		} else {
-			failed++;
-		}
-	} 
+		// read queries until we break
+		while (true) {
+			// read the instruction from the pipe
+			char* query = read_from_pipe(reading, buff_size);
+			// check if an exit command is given
+			if (strstr(query, "/exit")) {
+				// TODO: Maybe add to a function instead
+				// free the memory occupied by our data structures
+				hash_destroy(diseases_hash);
+				// hash_destroy(patients);
+
+				// create a directory to store our log files
+				mkdir("output", ACCESSPERMS);
+
+				// create a log file to store what we've achieved
+				char* f_name = concat("../logs/log_file.", itoa(getpid()));
+				FILE* log_file = fopen(f_name, "w+");
+				// free(f_name);
+				if (log_file == NULL) {
+					perror("creating");
+					exit(EXIT_FAILURE);
+				}
+				// print all the dirs that we handled
+				for (int i = 0; i < dirs->size; i++) {
+					char* country = list_nth(dirs, i);
+					fprintf(log_file, "%s\n", country);
+				}
+				// write the total query stats
+				fprintf(log_file, "\nTOTAL %d\nSUCCESS %d\n FAILED %d\n", (success + failed), success, failed);
+				// close the log file descriptor
+				fclose(log_file);
+				// close the pipes
+				close(reading); close(writing);
+				// free the list of the countries given
+				destroy_list(dirs);
+				// Finally, wait forever until the parent sends a SIGKILL that will exit the worker
+				while(true);
+			}
+			// call the menu to analyze the query and return the result
+			bool result = worker_menu(query, dirs, patients, diseases_hash, writing, buff_size);
+			// check if an error has occured (returned null), thus we must not write in the pipe
+			if (result) {
+				success++;
+			} else {
+				failed++;
+			}
+		} 
+	} else {
+		// if no countries are assigned, just wait until the parent sends a SIGKILL
+		while(true);
+	}
 }

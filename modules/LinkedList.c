@@ -64,6 +64,9 @@ Pointer list_nth(List list, int n) {
     return NULL;
 }
 
+bool is_empty(List list) {
+    return (list->size == 0);
+}
 // Destroy a list by freeing all of the memory occupied
 void destroy_list(Pointer l) {
     List list = (List)l;

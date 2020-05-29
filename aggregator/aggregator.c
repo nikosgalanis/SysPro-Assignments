@@ -120,19 +120,22 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     //assign one dir to each worker, starting from worker 1
     int i = 0;
     // while there are countries remaining
-    while (remainder) {
+    while (count < n_dirs) {
         // assign the dir by informing the child process through the pipe=
         write_to_pipe(writing[i], buff_size, dirs[count]);
         // save the tuple in the hash table
         hash_insert(dirs_to_workers, dirs[count], &workers_ids[i]);
+        // adjust the pointers
         i++; count++;
     }
     // write this into every pipe so the workers know when the dirs that they are gonna parse end
     for (int i = 0; i < n_workers; i++) {
         write_to_pipe(writing[i], buff_size, "end");
     }
+    // update the nworkers variable in case that the dirs are less than the workers
+    int active_workers = (split_no == 0) ? remainder : n_workers;
     // print the incoming stats from each worker
-    for (int i = 0; i < n_workers; i++) {
+    for (int i = 0; i < active_workers; i++) {
         char* n = read_from_pipe(reading[i], buff_size);
         int n_files = atoi(n);
         for (int j = 0; j < n_files; j++) {
@@ -159,7 +162,7 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     // close the input directory
     closedir(input);
     // call the menu to get queries from the user and pass them to the workers
-    menu(reading, writing, n_workers, workers_ids, buff_size, dirs_to_workers);
+    menu(reading, writing, active_workers, workers_ids, buff_size, dirs_to_workers);
     //the menu returns when the user has requested to exit the program
 
     //free the hash table of the workers-countries
