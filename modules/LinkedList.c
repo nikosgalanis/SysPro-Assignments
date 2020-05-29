@@ -46,6 +46,11 @@ bool list_search(List list, Pointer node_info) {
     return false;
 }
 
+// Function to see if an item exists in a list
+bool in_list(List list, Pointer node_info) {
+    return list_search(list, node_info);
+}
+
 // Return the size of the list
 int list_size(List list) {
     return list->size;

@@ -1,6 +1,11 @@
 #include "common_types.h"
 #include "common_functions.h"
 #include <sys/select.h>
+#include <sys/stat.h>
+#include <signal.h>
+#include "Handlers.h"
+
+extern volatile sig_atomic_t sig_int_raised;
 
 // List countries query, designated for the monitor, as he is the onnly one who has all the info ensembled
 void list_countries(HashTable hash) {
@@ -8,9 +13,45 @@ void list_countries(HashTable hash) {
 }
 
 void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_size, HashTable hash) {
+    // static struct sigaction act;
+    // act.sa_handler = catch_int;
+    // sigfillset(&(act.sa_mask));
+
+    // sigaction(SIGINT, &act, NULL);
 	char instruction[STRING_SIZE];
+	// keep stats for 
+	int success = 0, failed = 0;
 	printf("Enter a new query\n");
 	while (fgets(instruction, STRING_SIZE, stdin) != NULL) {
+		// handle possible signals before the parent starts another query
+		// if (sig_int_raised) {
+			//TODO: Do somehting to notify the workers
+			// fprintf(stderr, "heeeeere\n");
+			// // Send a SIGKILL to kill all the workers
+			// for (int i = 0; i < n_workers; i++) {
+        	// 	kill(workers_ids[i], SIGKILL);
+			// }
+			// // create a directory to store our log files
+			// mkdir("output", PERMS);
+			// // create a log file to store what we've achieved
+			// char* f_name = concat("../logs/log_file.", itoa(getpid()));
+			// // open the file
+			// FILE* log_file = fopen(f_name, "w+");
+			// // free(f_name);
+			// if (log_file == NULL) {
+			// 	perror("creating");
+			// 	exit(EXIT_FAILURE);
+			// }
+			// // print each country from the country ht to the file
+			// hash_traverse(hash, print_countries, log_file, NULL, NULL);
+			// // write the total query stats
+			// fprintf(log_file, "\nTOTAL %d\nSUCCESS %d\n FAILED %d\n", (success + failed), success, failed);
+			// // close the log_file
+			// fclose(log_file);
+			// // return to the main function to free everything before exiting
+			// return;
+		// }
+
 		if(strstr(instruction, "/listCountries")) {
 			list_countries(hash);
 		}

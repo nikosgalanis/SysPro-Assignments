@@ -22,6 +22,7 @@ struct list {
 List create_list(CompareFunc compare, DestroyFunc destroy);
 void list_insert(List list, Pointer node);
 bool list_search(List list, Pointer value);
+bool in_list(List list, Pointer node_info);
 int list_size(List list);
 bool is_empty(List list);
 Pointer list_nth(List list, int n);

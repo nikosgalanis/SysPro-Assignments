@@ -11,11 +11,20 @@
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
+#include "Handlers.h"
+#include <sys/select.h>
+
+volatile sig_atomic_t sig_int_raised = 0;
 
 // declaration of the menu function
 void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_size, HashTable hash);
 
 void aggregator(int n_workers, int buff_size, char* input_dir) {
+    // static struct sigaction act;
+    // act.sa_handler = catch_int;
+    // sigfillset(&(act.sa_mask));
+
+    // sigaction(SIGINT, &act, NULL);
     // hold a pointer for the subdirs that we are going to check
     struct dirent* sub_dir;
     // Open the input dir given by the user
@@ -27,6 +36,10 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     }
     // Create n_workers child processes with fork, and then exec to redirect to another executable
     pid_t pid;
+    // sleep(5);
+    // if (sig_int_raised) {
+    //     fprintf(stderr, "here\n");
+    // }
     // arrays to store the file descs coming from the pipes for reading and writing
     int reading[n_workers]; int writing[n_workers];
     // array to store the pids of the childs
@@ -133,31 +146,50 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
         write_to_pipe(writing[i], buff_size, "end");
     }
     // update the nworkers variable in case that the dirs are less than the workers
-    int active_workers = (split_no == 0) ? remainder : n_workers;
-    // print the incoming stats from each worker
-    for (int i = 0; i < active_workers; i++) {
-        char* n = read_from_pipe(reading[i], buff_size);
-        int n_files = atoi(n);
-        for (int j = 0; j < n_files; j++) {
-            char* name = read_from_pipe(reading[i], buff_size);
-            char* country = read_from_pipe(reading[i], buff_size);
-            char* n_dis = read_from_pipe(reading[i], buff_size);
-            int n_diseases = atoi(n_dis);
-            fprintf(stdout, "%s\n%s\n", name, country);
-            for (int k = 0; k < n_diseases; k++) {
-                char* disease = read_from_pipe(reading[i], buff_size);
-                fprintf(stdout, "%s\n", disease);
-                free(disease);
-                char* info = read_from_pipe(reading[i], buff_size);
-                fprintf(stdout, "%s\n", info);
-                free(info);
-            }
-            fprintf(stdout, "\n");
-            free(name); 
-            free(country);
-            free(n_dis);
+    int active_workers = (split_no == 0) ? remainder : n_workers;				// read from all the pipes
+    fd_set active, read;
+    // initialize the sets of the fds
+    FD_ZERO(&active);
+    for (int i = 0; i < n_workers; i++) {
+        FD_SET(reading[i], &active);
+    }
+    int done = 0;
+    while (done < active_workers) {
+        // print the incoming stats from each worker
+        // Block until an input arrives from one of the workers
+        read = active;
+        // find out how many workers are ready
+        if (select(FD_SETSIZE, &read, NULL, NULL, NULL) < 0) {
+            perror("select");
+            exit(EXIT_FAILURE);
         }
-        free(n);
+        for (int i = 0; i < active_workers; i++) {
+            if (FD_ISSET(reading[i], &read)) {
+                char* n = read_from_pipe(reading[i], buff_size);
+                int n_files = atoi(n);
+                for (int j = 0; j < n_files; j++) {
+                    char* name = read_from_pipe(reading[i], buff_size);
+                    char* country = read_from_pipe(reading[i], buff_size);
+                    char* n_dis = read_from_pipe(reading[i], buff_size);
+                    int n_diseases = atoi(n_dis);
+                    fprintf(stdout, "%s\n%s\n", name, country);
+                    for (int k = 0; k < n_diseases; k++) {
+                        char* disease = read_from_pipe(reading[i], buff_size);
+                        fprintf(stdout, "%s\n", disease);
+                        free(disease);
+                        char* info = read_from_pipe(reading[i], buff_size);
+                        fprintf(stdout, "%s\n", info);
+                        free(info);
+                    }
+                    fprintf(stdout, "\n");
+                    free(name); 
+                    free(country);
+                    free(n_dis);
+                }
+                free(n);
+                done++;
+            }
+        }
     }
     // close the input directory
     closedir(input);

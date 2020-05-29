@@ -11,6 +11,7 @@
 #define HASH_SIZE 100
 #define BUCKET_SIZE 100
 #define FAILED -1
+#define PERMS 0777
 // Usefull typedefs
 typedef void* Pointer;
 

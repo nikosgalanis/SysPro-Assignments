@@ -73,7 +73,6 @@ char* nth_word(char* s, int n) {
 	char delim[3] = " \n";
 	arr[0] = strtok(str, delim);
     int i = 1;
-    char* next;
 	while (i < n) {
 		arr[i] = strtok(NULL, delim);
         i++;
@@ -143,6 +142,14 @@ void print_list_contents(Pointer ent, Pointer d1, Pointer d2, Pointer d3, Pointe
     HashEntry entry = (HashEntry)ent;
     if (entry) {
 		printf("%15s %d\n", entry->key, *(int*)entry->item);
+    }
+}
+// Function to traverse our dirs_to_workers hash table
+void print_countries(Pointer ent, Pointer f, Pointer d2, Pointer d3, Pointer d4) {
+    FILE* file = (FILE*)f;
+	HashEntry entry = (HashEntry)ent;
+    if (entry) {
+		fprintf(file, "%15s\n", entry->key);
     }
 }
 
