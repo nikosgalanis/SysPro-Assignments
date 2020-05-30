@@ -9,11 +9,29 @@
 #include "Queries.h"
 #include <sys/types.h>
 #include <unistd.h>
+#include <signal.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "parser.h"
 
+volatile sig_atomic_t sig_int_raised;
+volatile sig_atomic_t sig_usr1_raised;
+
+void catch_int(int signo) {
+    sig_int_raised = signo;
+    fprintf(stderr, "\nCatching : signo\n");
+	fprintf(stderr, "%d\n", sig_int_raised);
+}
+
 int main(int argc, char* argv[]) {
+	// iniialize a signal set
+	static struct sigaction act;
+	// handle our signals with our function, in order to catch them
+    act.sa_handler = catch_int;
+    sigfillset(&(act.sa_mask));
+	// want to handle SIGINT and SIGQUIT with this function
+    sigaction(SIGINT, &act, NULL);
+    sigaction(SIGQUIT, &act, NULL);
 	// Get the pipe names from the args, and open them:
 	// 1st for writing, 2nd for reading
 	int reading, writing;
@@ -21,6 +39,8 @@ int main(int argc, char* argv[]) {
 	char* input_dir = concat(argv[4], "/");
 	writing = open(argv[1], O_WRONLY, 0666);
 	reading = open(argv[2], O_RDONLY, 0666);
+	// if "init is given, then during parsing we must print the stats"
+	bool print_stats = (strcmp(argv[5], "init") == 0);
 	// Variables to stroe statistics for records.
 	int success = 0; int failed = 0;
 	// Create a hash table to store all the different diseases
@@ -46,13 +66,29 @@ int main(int argc, char* argv[]) {
 	// proceed only if the worker is assigned with at least one country
 	if (!is_empty(dirs)) {
 		// call the function to parse the whole input and send the stats back to the parent
-		parser(input_dir, buff_size, dirs, parsed_files, writing, patients, diseases_hash, &success, &failed);
+		parser(input_dir, buff_size, dirs, parsed_files, writing, patients, diseases_hash, &success, &failed, print_stats);
 		// read queries until we break
 		while (true) {
 			// read the instruction from the pipe
 			char* query = read_from_pipe(reading, buff_size);
+			// check for a possible signal
+			fprintf(stderr, "value is %d\n", sig_int_raised);
+			// If a sigint or sigquit are caught
+			if (sig_int_raised) {
+				fprintf(stderr, "heeelp\n");
+				// Just goto (YES! goto! we are not freshmen anymore) the exiting procedure
+				goto EXIT_IF;
+			}
+			// if a sigusr1 is raised
+			if (sig_usr1_raised) {
+				// parse the correct files, by giving the parsed list so we do not read all the files again
+				parser(input_dir, buff_size, dirs, parsed_files, writing, patients, diseases_hash, &success, &failed, print_stats);
+				// inform the parent that we've read stuff by sending a sigusr2
+				kill(getppid(), SIGUSR2);
+			}
 			// check if an exit command is given
-			if (strstr(query, "/exit")) {
+			EXIT_IF: if (strstr(query, "/exit")) {
+				fprintf(stderr, "here\n");
 				// TODO: Maybe add to a function instead
 				// free the memory occupied by our data structures
 				hash_destroy(diseases_hash);
@@ -78,10 +114,12 @@ int main(int argc, char* argv[]) {
 				fprintf(log_file, "\nTOTAL %d\nSUCCESS %d\n FAILED %d\n", (success + failed), success, failed);
 				// close the log file descriptor
 				fclose(log_file);
-				// close the pipes
-				close(reading); close(writing);
 				// free the list of the countries given
 				destroy_list(dirs);
+				// inform the parent that we've ended our job
+				write_to_pipe(writing, buff_size, "ready");
+				// close the pipes
+				close(reading); close(writing);
 				// Finally, wait forever until the parent sends a SIGKILL that will exit the worker
 				while(true);
 			}

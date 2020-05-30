@@ -39,10 +39,11 @@ void print_todays_stats(Pointer ent, Pointer buffer_size, Pointer f_desc, Pointe
 	write_to_pipe(fd, buff_size, final);
 }
 
-void parser(char* input_dir, int buff_size, List dirs, List parsed_files, int writing, HashTable patients, HashTable diseases_hash, int* success, int* failed) {
+void parser(char* input_dir, int buff_size, List dirs, List parsed_files, int writing, HashTable patients, HashTable diseases_hash, int* success, int* failed, bool print_stats) {
     // inform the parent how many stat strings he will read
     int n_files = n_files_in_worker(input_dir, dirs);
-    write_to_pipe(writing, buff_size, itoa(n_files));
+    if (print_stats)
+        write_to_pipe(writing, buff_size, itoa(n_files));
     // for every directory/country that the worker must parse
     for (int i = 0; i < dirs->size; i++) {
         // find the dir name
@@ -78,9 +79,11 @@ void parser(char* input_dir, int buff_size, List dirs, List parsed_files, int wr
                 exit(EXIT_FAILURE);
             }
             // Begin thje writing of the stats in the pipe
-            write_to_pipe(writing, buff_size, temp_name);
+            if (print_stats)
+                write_to_pipe(writing, buff_size, temp_name);
             char* country_to_send = list_nth(dirs, i);
-            write_to_pipe(writing, buff_size, country_to_send);
+            if (print_stats)
+                write_to_pipe(writing, buff_size, country_to_send);
             // allocate size for the string that will temporary store the records
             char* record = malloc(STRING_SIZE * sizeof(*record));
             
@@ -156,9 +159,11 @@ void parser(char* input_dir, int buff_size, List dirs, List parsed_files, int wr
             }
             // inform the parent how many diseases to read
             char* n_dis = itoa(todays_diseases->items);
-            write_to_pipe(writing, buff_size, n_dis);
-            // traverse the ht to send the stats to the pipe
-            hash_traverse(todays_diseases, print_todays_stats, &buff_size, &writing, NULL);
+            if (print_stats) {
+                write_to_pipe(writing, buff_size, n_dis);
+                // traverse the ht to send the stats to the pipe
+                hash_traverse(todays_diseases, print_todays_stats, &buff_size, &writing, NULL);
+            }
             // close the file that we just parsed
             fclose(curr_file);
             // destroy the ht for this file, in order to avoid leaks

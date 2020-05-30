@@ -156,7 +156,7 @@ bool worker_menu(char* qu, List dirs, HashTable patients, HashTable diseases_has
             return true;
         }
     } else {
-        fprintf(stderr, "Query not recognized\n");
+        // fprintf(stderr, "Query not recognized %s\n", qu);
         free(qu);
         return false;
     }

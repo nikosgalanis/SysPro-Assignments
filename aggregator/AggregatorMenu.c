@@ -2,8 +2,12 @@
 #include "common_functions.h"
 #include <sys/select.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <signal.h>
+#include <errno.h>
 #include "Handlers.h"
+#include <fcntl.h>
 
 extern volatile sig_atomic_t sig_int_raised;
 
@@ -12,7 +16,21 @@ void list_countries(HashTable hash) {
 	hash_traverse(hash, print_list_contents, NULL, NULL, NULL);
 }
 
-void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_size, HashTable hash) {
+void renew_lists(Pointer ent, Pointer write_fd, Pointer old, Pointer dummy, Pointer new) {
+	HashEntry entry = (HashEntry)ent;
+	int writing = *(int*)write;
+	int old_worker = *(int*)old;
+	int new_worker = *(int*)new; 
+	int item = *(int*)entry->item; 
+	if (item == old_worker) {
+		// pass the dir to the new worker
+		write_to_pipe(writing, 10, entry->key);
+		// change the hash info
+		entry->item = new;	
+	}
+}
+
+void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_size, HashTable hash, char** names1, char** names2, char* input_dir) {
     // static struct sigaction act;
     // act.sa_handler = catch_int;
     // sigfillset(&(act.sa_mask));
@@ -51,7 +69,61 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
 			// // return to the main function to free everything before exiting
 			// return;
 		// }
+		pid_t dead_child;
+		// run a loop for all the childs(-1), to see if they have died. 
+		// A dead child's pid is returned to dead_child var, so we know what we must do from here
+		while ((dead_child = waitpid(-1, NULL, WNOHANG)) > 0) {
+			// we must replace the dead child with a new one
+			// get he position in the arrays
+			int pos = get_pos_from_pid(dead_child, workers_ids, n_workers);
+			pid_t new_pid = fork();
+			// new names for new pipes
+			char* str_i = itoa(pos);
+			char* new_name1 = concat("../tmp/fifo_new_1_", str_i);
+			char* new_name2 = concat("../tmp/fifo_new_1_", str_i);
+			free(str_i);
+			if (new_pid > 0) {
+				// we are in the parent
+				fprintf(stderr, "We are in parent\n");
+				// Create __two__ new named pipes, so the process can write in one of them
+				if (mkfifo(new_name1, 0666) == -1) {
+					if (errno != EEXIST) {
+						perror("reciever: mkfifo");
+						exit(EXIT_FAILURE);
+					}
+				}
 
+				if (mkfifo(new_name2, 0666) == -1) {
+					if (errno != EEXIST) {
+						perror("reciever: mkfifo");
+						exit(EXIT_FAILURE);
+					}
+				}
+			} else {
+				fprintf(stderr, "We are in child\n");
+				// we are in the child, so call exec to go to the worker's code
+				execl("../worker/worker", "worker", new_name1, new_name2, itoa(buff_size), input_dir, "new", NULL);
+				// if we reach this point, then exec has returned, so sthg wrong has happened
+				perror("execl");
+				exit(EXIT_FAILURE);
+			}
+			// child has gone to another executable. Only the parent is here
+			// open the new named pipes
+			if ((reading[pos] = open(new_name1, O_RDONLY, 0666)) == -1) {
+				perror("creating");
+				exit(EXIT_FAILURE);
+			}
+			if ((writing[pos] = open(new_name2, O_WRONLY, 0666)) == -1) {
+				perror("creating");
+				exit(EXIT_FAILURE);
+			}
+			// send info to the new child 
+			hash_traverse(hash, renew_lists, &writing[pos], &workers_ids[pos], &new_pid);
+			// send an "end" so the new child knows that the directories have ended
+			write_to_pipe(writing[pos], buff_size, "end");
+			// update the pid
+			workers_ids[pos] = new_pid;
+		}
 		if(strstr(instruction, "/listCountries")) {
 			list_countries(hash);
 		}
@@ -263,9 +335,15 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
 			// inform every user that we are ready to kill them
 			for (int i = 0; i < n_workers; i++) {
 				write_to_pipe(writing[i], buff_size, instruction);
+			}		
+			// wait to get a respose from him that he is ready to die
+			for (int i = 0; i < n_workers; i++) {
+				char* response = read_from_pipe(reading[i], buff_size);
+				if (strcmp(response, "ready")) {
+					printf("Somehting unexpected happened. Exiting...\n");
+				}
+				free(response);
 			}
-			sleep(2);
-			// TODO: send a sigkill to everyone
 			return;
 		}
 		else {

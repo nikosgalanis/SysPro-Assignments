@@ -17,7 +17,7 @@
 volatile sig_atomic_t sig_int_raised = 0;
 
 // declaration of the menu function
-void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_size, HashTable hash);
+void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_size, HashTable hash, char** names1, char** names2, char* input_dir);
 
 void aggregator(int n_workers, int buff_size, char* input_dir) {
     // static struct sigaction act;
@@ -73,7 +73,7 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
         } else {
             // The child does the rest
             // call an exec function, in order to redirect the child in the worker file
-            execl("../worker/worker", "worker", names_1[i], names_2[i], itoa(buff_size), input_dir, NULL);
+            execl("../worker/worker", "worker", names_1[i], names_2[i], itoa(buff_size), input_dir, "init", NULL);
             // if we reach this point, then exec has returned, so sthg wrong has happened
             perror("execl");
             exit(EXIT_FAILURE);
@@ -115,7 +115,7 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
                 i--;
     }
     // Create a hash table to store which dirs are held by which workers (key: pid, item: list of countries)
-    HashTable dirs_to_workers = hash_create(n_workers, hash_strings, BUCKET_SIZE, NULL); //TODO: Check destroy fn
+    HashTable dirs_to_workers = hash_create(n_workers, hash_strings, BUCKET_SIZE, NULL);
     // find out the correct way to split the dirs
     int split_no = n_dirs / n_workers;
     int remainder = n_dirs % n_workers;
@@ -146,7 +146,8 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
         write_to_pipe(writing[i], buff_size, "end");
     }
     // update the nworkers variable in case that the dirs are less than the workers
-    int active_workers = (split_no == 0) ? remainder : n_workers;				// read from all the pipes
+    int active_workers = (split_no == 0) ? remainder : n_workers;				
+    // read from all the pipes
     fd_set active, read;
     // initialize the sets of the fds
     FD_ZERO(&active);
@@ -194,17 +195,15 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     // close the input directory
     closedir(input);
     // call the menu to get queries from the user and pass them to the workers
-    menu(reading, writing, active_workers, workers_ids, buff_size, dirs_to_workers);
+    menu(reading, writing, active_workers, workers_ids, buff_size, dirs_to_workers, names_1, names_2, input_dir);
     //the menu returns when the user has requested to exit the program
 
     //free the hash table of the workers-countries
     hash_destroy(dirs_to_workers);
+    // send a SIGKILL to the workers to end them
     for (int i = 0; i < n_workers; i++) {
         kill(workers_ids[i], SIGKILL);
     }
-    //TODO: Send sigkill to all the workers and wait for them to end
-    // for (int i = 0; i < n_workers; i++)
-    //     wait(NULL);
     // Delete all the pipes that we've opened
     for (int i = 0; i < n_workers; i++) {
         unlink(names_1[i]);
@@ -217,8 +216,9 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     for (int i = 0; i < n_dirs; i++) {
         free(dirs[i]);
     }
-    // wait(&workers_ids[0]);
-    pid_t wpid; int status = 0;
-    while ((wpid = wait(&status)) > 0);
+    // wait until all the children are dead
+    for (int i = 0; i < n_workers; i++) {
+        wait(&workers_ids[i]);
+    }
     // we are now ready to return to the main function to wrap it up
 }

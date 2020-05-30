@@ -15,7 +15,7 @@ int compare(Pointer first, Pointer second) {
 
 // remake of the concat function because c is useless
 char* concat(char* str1, char* str2) {
-	char* res = malloc(strlen(str1) + strlen(str2) + 1);
+	char* res = malloc(strlen(str1) + strlen(str2) + 10);
     memcpy(res, str1, strlen(str1));
     memcpy(res + strlen(str1), str2, strlen(str2) + 1);
 	return res;
