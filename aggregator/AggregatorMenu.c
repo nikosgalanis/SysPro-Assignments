@@ -10,6 +10,20 @@
 #include <fcntl.h>
 
 extern volatile sig_atomic_t sig_int_raised;
+extern volatile sig_atomic_t sig_usr_raised;
+
+// sigint handler
+void catch_int(int signo) {
+    sig_int_raised = signo;
+    fprintf(stderr, "\nCatching : signo\n");
+	fprintf(stderr, "%d\n", sig_int_raised);
+}
+// sigusr handler
+void catch_int(int signo) {
+    sig_usr_raised = signo;
+    fprintf(stderr, "\nCatching : signo\n");
+	fprintf(stderr, "%d\n", sig_int_raised);
+}
 
 // List countries query, designated for the monitor, as he is the onnly one who has all the info ensembled
 void list_countries(HashTable hash) {
@@ -31,48 +45,23 @@ void renew_lists(Pointer ent, Pointer write_fd, Pointer old, Pointer dummy, Poin
 }
 
 void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_size, HashTable hash, char** names1, char** names2, char* input_dir) {
-    // static struct sigaction act;
-    // act.sa_handler = catch_int;
-    // sigfillset(&(act.sa_mask));
+    static struct sigaction act;
+    act.sa_handler = catch_int;
+    sigfillset(&(act.sa_mask));
 
-    // sigaction(SIGINT, &act, NULL);
+    sigaction(SIGINT, &act, NULL);
+    sigaction(SIGQUIT, &act, NULL);
 	char instruction[STRING_SIZE];
 	// keep stats for 
-	int success = 0, failed = 0;
+	int total = 0, failed = 0;
 	printf("Enter a new query\n");
 	while (fgets(instruction, STRING_SIZE, stdin) != NULL) {
-		// handle possible signals before the parent starts another query
-		// if (sig_int_raised) {
-			//TODO: Do somehting to notify the workers
-			// fprintf(stderr, "heeeeere\n");
-			// // Send a SIGKILL to kill all the workers
-			// for (int i = 0; i < n_workers; i++) {
-        	// 	kill(workers_ids[i], SIGKILL);
-			// }
-			// // create a directory to store our log files
-			// mkdir("output", PERMS);
-			// // create a log file to store what we've achieved
-			// char* f_name = concat("../logs/log_file.", itoa(getpid()));
-			// // open the file
-			// FILE* log_file = fopen(f_name, "w+");
-			// // free(f_name);
-			// if (log_file == NULL) {
-			// 	perror("creating");
-			// 	exit(EXIT_FAILURE);
-			// }
-			// // print each country from the country ht to the file
-			// hash_traverse(hash, print_countries, log_file, NULL, NULL);
-			// // write the total query stats
-			// fprintf(log_file, "\nTOTAL %d\nSUCCESS %d\n FAILED %d\n", (success + failed), success, failed);
-			// // close the log_file
-			// fclose(log_file);
-			// // return to the main function to free everything before exiting
-			// return;
-		// }
+
 		pid_t dead_child;
 		// run a loop for all the childs(-1), to see if they have died. 
 		// A dead child's pid is returned to dead_child var, so we know what we must do from here
 		while ((dead_child = waitpid(-1, NULL, WNOHANG)) > 0) {
+			fprintf(stderr, "child %d died", dead_child);
 			// we must replace the dead child with a new one
 			// get he position in the arrays
 			int pos = get_pos_from_pid(dead_child, workers_ids, n_workers);
@@ -148,6 +137,7 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
 						free(response);
 					} else {
 						fprintf(stderr, "Error with country provided");
+						failed++;
 						continue;
 					}
 				}
@@ -220,11 +210,13 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
 					}
 				} else {
 					fprintf(stderr, "Error with country provided");
+					failed++;
 					continue;
 				}
 			}
 			else {
 				fprintf(stderr, "Country provided not listed in input dir\n");
+				failed++;
 				continue;
 			}
 		}
@@ -288,6 +280,7 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
 						free(response);
 					} else {
 						fprintf(stderr, "Error with country provided");
+						failed++;
 						continue;
 					}
 				}
@@ -348,7 +341,49 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
 		}
 		else {
 			printf("Query not recognized. Choose one of the default options\n");
+			failed++;
 		}
+		total++;
 		printf("\nEnter a new query\n");
-	}    
+	}
+	// handle possible signals before the parent starts another query
+	// NOTE: this is placed outside the while, because the fgets will fail, thus the loop will be broken
+	if (sig_int_raised) {
+		// Notify the workers in order to end their opperations
+		for (int i = 0; i < n_workers; i++) {
+			write_to_pipe(writing[i], buff_size, "/exit");
+		}
+		fprintf(stderr, "heeeeere\n");
+		// wait to get a respose from him that he is ready to die
+		for (int i = 0; i < n_workers; i++) {
+			char* response = read_from_pipe(reading[i], buff_size);
+			if (strcmp(response, "ready")) {
+				printf("Somehting unexpected happened. Exiting...\n");
+			}
+			free(response);
+		}
+		// Send a SIGKILL to kill all the workers
+		for (int i = 0; i < n_workers; i++) {
+			kill(workers_ids[i], SIGKILL);
+		}
+		// create a directory to store our log files
+		mkdir("../logs", PERMS);
+		// create a log file to store what we've achieved
+		char* f_name = concat("../logs/log_file.", itoa(getpid()));
+		// open the file
+		FILE* log_file = fopen(f_name, "w+");
+		// free(f_name);
+		if (log_file == NULL) {
+			perror("creating");
+			exit(EXIT_FAILURE);
+		}
+		// print each country from the country ht to the file
+		hash_traverse(hash, print_countries, log_file, NULL, NULL);
+		// write the total query stats
+		fprintf(log_file, "\nTOTAL %d\nSUCCESS %d\nFAILED %d\n", total, (total - failed), failed);
+		// close the log_file
+		fclose(log_file);
+		// return to the main function to free everything before exiting
+		return;
+	}
 }

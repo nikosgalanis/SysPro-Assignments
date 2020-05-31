@@ -23,6 +23,11 @@ void catch_int(int signo) {
 	fprintf(stderr, "%d\n", sig_int_raised);
 }
 
+void catch_usr1(int signo) {
+    sig_usr1_raised = signo;
+    fprintf(stderr, "\nCatching : signo\n");
+	fprintf(stderr, "%d\n", sig_usr1_raised);
+}
 int main(int argc, char* argv[]) {
 	// iniialize a signal set
 	static struct sigaction act;
@@ -72,11 +77,11 @@ int main(int argc, char* argv[]) {
 			// read the instruction from the pipe
 			char* query = read_from_pipe(reading, buff_size);
 			// check for a possible signal
-			fprintf(stderr, "value is %d\n", sig_int_raised);
+			fprintf(stderr, "pid is %d value is %d\n", getpid(), sig_int_raised);
 			// If a sigint or sigquit are caught
 			if (sig_int_raised) {
 				fprintf(stderr, "heeelp\n");
-				// Just goto (YES! goto! we are not freshmen anymore) the exiting procedure
+				// Just goto the exiting procedure
 				goto EXIT_IF;
 			}
 			// if a sigusr1 is raised
@@ -87,15 +92,15 @@ int main(int argc, char* argv[]) {
 				kill(getppid(), SIGUSR2);
 			}
 			// check if an exit command is given
-			EXIT_IF: if (strstr(query, "/exit")) {
-				fprintf(stderr, "here\n");
+			if (strstr(query, "/exit")) {
+			EXIT_IF: 	fprintf(stderr, "here\n");
 				// TODO: Maybe add to a function instead
 				// free the memory occupied by our data structures
 				hash_destroy(diseases_hash);
 				// hash_destroy(patients);
 
 				// create a directory to store our log files
-				mkdir("output", PERMS);
+				mkdir("../logs", PERMS);
 
 				// create a log file to store what we've achieved
 				char* f_name = concat("../logs/log_file.", itoa(getpid()));
@@ -120,6 +125,9 @@ int main(int argc, char* argv[]) {
 				write_to_pipe(writing, buff_size, "ready");
 				// close the pipes
 				close(reading); close(writing);
+				// if we are here because of an interupt, just exit
+				if (sig_int_raised)
+					exit(EXIT_SUCCESS);
 				// Finally, wait forever until the parent sends a SIGKILL that will exit the worker
 				while(true);
 			}

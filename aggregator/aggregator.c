@@ -13,6 +13,7 @@
 #include <signal.h>
 #include "Handlers.h"
 #include <sys/select.h>
+#include "stats.h"
 
 volatile sig_atomic_t sig_int_raised = 0;
 
@@ -146,52 +147,9 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
         write_to_pipe(writing[i], buff_size, "end");
     }
     // update the nworkers variable in case that the dirs are less than the workers
-    int active_workers = (split_no == 0) ? remainder : n_workers;				
-    // read from all the pipes
-    fd_set active, read;
-    // initialize the sets of the fds
-    FD_ZERO(&active);
-    for (int i = 0; i < n_workers; i++) {
-        FD_SET(reading[i], &active);
-    }
-    int done = 0;
-    while (done < active_workers) {
-        // print the incoming stats from each worker
-        // Block until an input arrives from one of the workers
-        read = active;
-        // find out how many workers are ready
-        if (select(FD_SETSIZE, &read, NULL, NULL, NULL) < 0) {
-            perror("select");
-            exit(EXIT_FAILURE);
-        }
-        for (int i = 0; i < active_workers; i++) {
-            if (FD_ISSET(reading[i], &read)) {
-                char* n = read_from_pipe(reading[i], buff_size);
-                int n_files = atoi(n);
-                for (int j = 0; j < n_files; j++) {
-                    char* name = read_from_pipe(reading[i], buff_size);
-                    char* country = read_from_pipe(reading[i], buff_size);
-                    char* n_dis = read_from_pipe(reading[i], buff_size);
-                    int n_diseases = atoi(n_dis);
-                    fprintf(stdout, "%s\n%s\n", name, country);
-                    for (int k = 0; k < n_diseases; k++) {
-                        char* disease = read_from_pipe(reading[i], buff_size);
-                        fprintf(stdout, "%s\n", disease);
-                        free(disease);
-                        char* info = read_from_pipe(reading[i], buff_size);
-                        fprintf(stdout, "%s\n", info);
-                        free(info);
-                    }
-                    fprintf(stdout, "\n");
-                    free(name); 
-                    free(country);
-                    free(n_dis);
-                }
-                free(n);
-                done++;
-            }
-        }
-    }
+    int active_workers = (split_no == 0) ? remainder : n_workers;	
+    // call the print function to prin the stats from the incoming files		
+    print_stats(active_workers, buff_size, reading);
     // close the input directory
     closedir(input);
     // call the menu to get queries from the user and pass them to the workers

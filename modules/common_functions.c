@@ -1,5 +1,6 @@
 #include "common_functions.h"
 #include <dirent.h>
+#include <errno.h>
 
 // compare function for strings
 int compare_strings (Pointer a, Pointer b) {
@@ -86,7 +87,11 @@ char* nth_word(char* s, int n) {
 char* read_from_pipe(int fd, int buff_size) {
 	// find out how many bytes we want to read
 	int n_bytes;
-	read(fd, &n_bytes, sizeof(int));
+	int n = read(fd, &n_bytes, sizeof(int));
+	// if read fails due to an interupt, then just return null, we'll handle it later
+	if (n == -1 && (errno == EINTR)) {
+		return NULL;
+	}
     // Allocate a string to return (space for \0 is taken into account by the write function)
 	char* info = malloc((n_bytes + 1) * sizeof(*info));
 	// set how many times we must read from the buffer given the buff_size
