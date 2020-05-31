@@ -9,8 +9,8 @@
 #include "Handlers.h"
 #include <fcntl.h>
 
-extern volatile sig_atomic_t sig_int_raised;
-extern volatile sig_atomic_t sig_usr_raised;
+volatile sig_atomic_t sig_int_raised;
+volatile sig_atomic_t sig_usr_raised;
 
 // sigint handler
 void catch_int(int signo) {
@@ -19,10 +19,10 @@ void catch_int(int signo) {
 	fprintf(stderr, "%d\n", sig_int_raised);
 }
 // sigusr handler
-void catch_int(int signo) {
+void catch_usr(int signo) {
     sig_usr_raised = signo;
     fprintf(stderr, "\nCatching : signo\n");
-	fprintf(stderr, "%d\n", sig_int_raised);
+	fprintf(stderr, "%d\n", sig_usr_raised);
 }
 
 // List countries query, designated for the monitor, as he is the onnly one who has all the info ensembled
@@ -32,9 +32,8 @@ void list_countries(HashTable hash) {
 
 void renew_lists(Pointer ent, Pointer write_fd, Pointer old, Pointer dummy, Pointer new) {
 	HashEntry entry = (HashEntry)ent;
-	int writing = *(int*)write;
+	int writing = *(int*)write_fd;
 	int old_worker = *(int*)old;
-	int new_worker = *(int*)new; 
 	int item = *(int*)entry->item; 
 	if (item == old_worker) {
 		// pass the dir to the new worker
@@ -45,23 +44,33 @@ void renew_lists(Pointer ent, Pointer write_fd, Pointer old, Pointer dummy, Poin
 }
 
 void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_size, HashTable hash, char** names1, char** names2, char* input_dir) {
-    static struct sigaction act;
-    act.sa_handler = catch_int;
-    sigfillset(&(act.sa_mask));
+	// iniialize a signal set
+	static struct sigaction act_int;
+	// handle our signals with our function, in order to catch them
+    act_int.sa_handler = catch_int;
+    sigfillset(&(act_int.sa_mask));
+	// want to handle SIGINT and SIGQUIT with this function
+    sigaction(SIGINT, &act_int, NULL);
+    sigaction(SIGQUIT, &act_int, NULL);
+	// we must also handle a SIGUSR1
+	static struct sigaction act_usr;
+	// handle our signals with our function, in order to catch them
+    act_usr.sa_handler = catch_usr;
+    sigfillset(&(act_usr.sa_mask));
+	// want to handle SIGINT and SIGQUIT with this function
+    sigaction(SIGUSR2, &act_usr, NULL);
 
-    sigaction(SIGINT, &act, NULL);
-    sigaction(SIGQUIT, &act, NULL);
 	char instruction[STRING_SIZE];
 	// keep stats for 
 	int total = 0, failed = 0;
 	printf("Enter a new query\n");
-	while (fgets(instruction, STRING_SIZE, stdin) != NULL) {
-
+	INPUT_WHILE: while (fgets(instruction, STRING_SIZE, stdin) != NULL) {
+		// first thing to do: check for dead workers
 		pid_t dead_child;
 		// run a loop for all the childs(-1), to see if they have died. 
 		// A dead child's pid is returned to dead_child var, so we know what we must do from here
 		while ((dead_child = waitpid(-1, NULL, WNOHANG)) > 0) {
-			fprintf(stderr, "child %d died", dead_child);
+			fprintf(stderr, "Worker %d died\n", dead_child);
 			// we must replace the dead child with a new one
 			// get he position in the arrays
 			int pos = get_pos_from_pid(dead_child, workers_ids, n_workers);
@@ -69,7 +78,9 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
 			// new names for new pipes
 			char* str_i = itoa(pos);
 			char* new_name1 = concat("../tmp/fifo_new_1_", str_i);
-			char* new_name2 = concat("../tmp/fifo_new_1_", str_i);
+			char* new_name2 = concat("../tmp/fifo_new_2_", str_i);
+			names1[pos] = new_name1;
+			names2[pos] = new_name2;
 			free(str_i);
 			if (new_pid > 0) {
 				// we are in the parent
@@ -89,7 +100,6 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
 					}
 				}
 			} else {
-				fprintf(stderr, "We are in child\n");
 				// we are in the child, so call exec to go to the worker's code
 				execl("../worker/worker", "worker", new_name1, new_name2, itoa(buff_size), input_dir, "new", NULL);
 				// if we reach this point, then exec has returned, so sthg wrong has happened
@@ -97,6 +107,9 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
 				exit(EXIT_FAILURE);
 			}
 			// child has gone to another executable. Only the parent is here
+			// close the old file descriptors
+			close(reading[pos]);
+			close(writing[pos]);
 			// open the new named pipes
 			if ((reading[pos] = open(new_name1, O_RDONLY, 0666)) == -1) {
 				perror("creating");
@@ -358,7 +371,8 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
 		for (int i = 0; i < n_workers; i++) {
 			char* response = read_from_pipe(reading[i], buff_size);
 			if (strcmp(response, "ready")) {
-				printf("Somehting unexpected happened. Exiting...\n");
+				// printf("Somehting unexpected happened. Exiting...\n");
+				fprintf(stderr, "Bad response\"%s\"\n", response);
 			}
 			free(response);
 		}
@@ -385,5 +399,52 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
 		fclose(log_file);
 		// return to the main function to free everything before exiting
 		return;
+	}
+	// check for a possible SIGUSR
+	if (sig_usr_raised) {
+		// a sigusr2 means that a worker has writern in their fd
+		// thus, select that user in oder to parse the files that they have provided
+		fd_set active, read;
+		// initialize the sets of the fds
+		FD_ZERO(&active);
+		for (int i = 0; i < n_workers; i++) {
+			FD_SET(reading[i], &active);
+		}
+		if (select(FD_SETSIZE, &read, NULL, NULL, NULL) < 0) {
+			fprintf(stderr, "No new files added, continuing\n");
+		} else {
+			// parse all the workers till we find the one that has written something
+			for (int i = 0; i < n_workers; i++) {
+				if (FD_ISSET(reading[i], &read)) {
+					// print the stats from this worker
+					char* n = read_from_pipe(reading[i], buff_size);
+					int n_files = atoi(n);
+					for (int j = 0; j < n_files; j++) {
+						char* name = read_from_pipe(reading[i], buff_size);
+						char* country = read_from_pipe(reading[i], buff_size);
+						char* n_dis = read_from_pipe(reading[i], buff_size);
+						int n_diseases = atoi(n_dis);
+						fprintf(stdout, "%s\n%s\n", name, country);
+						for (int k = 0; k < n_diseases; k++) {
+							char* disease = read_from_pipe(reading[i], buff_size);
+							fprintf(stdout, "%s\n", disease);
+							free(disease);
+							char* info = read_from_pipe(reading[i], buff_size);
+							fprintf(stdout, "%s\n", info);
+							free(info);
+						}
+						fprintf(stdout, "\n");
+						free(name); 
+						free(country);
+						free(n_dis);
+					}
+				}
+				break;
+			}
+		}
+		// restore the value of the signal
+		sig_usr_raised = 0;
+		// go back to reading stuff from the user
+		goto INPUT_WHILE;
 	}
 }

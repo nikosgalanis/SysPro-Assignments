@@ -15,7 +15,6 @@
 #include <sys/select.h>
 #include "stats.h"
 
-volatile sig_atomic_t sig_int_raised = 0;
 
 // declaration of the menu function
 void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_size, HashTable hash, char** names1, char** names2, char* input_dir);

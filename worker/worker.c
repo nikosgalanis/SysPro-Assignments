@@ -28,15 +28,25 @@ void catch_usr1(int signo) {
     fprintf(stderr, "\nCatching : signo\n");
 	fprintf(stderr, "%d\n", sig_usr1_raised);
 }
+
 int main(int argc, char* argv[]) {
+	fprintf(stderr, "child %d\n", getpid());
 	// iniialize a signal set
-	static struct sigaction act;
+	static struct sigaction act_int;
 	// handle our signals with our function, in order to catch them
-    act.sa_handler = catch_int;
-    sigfillset(&(act.sa_mask));
+    act_int.sa_handler = catch_int;
+    sigfillset(&(act_int.sa_mask));
 	// want to handle SIGINT and SIGQUIT with this function
-    sigaction(SIGINT, &act, NULL);
-    sigaction(SIGQUIT, &act, NULL);
+    sigaction(SIGINT, &act_int, NULL);
+    sigaction(SIGQUIT, &act_int, NULL);
+	// we must also handle a SIGUSR1
+	static struct sigaction act_usr;
+	// handle our signals with our function, in order to catch them
+    act_usr.sa_handler = catch_usr1;
+    sigfillset(&(act_usr.sa_mask));
+	// want to handle SIGINT and SIGQUIT with this function
+    sigaction(SIGUSR1, &act_usr, NULL);
+
 	// Get the pipe names from the args, and open them:
 	// 1st for writing, 2nd for reading
 	int reading, writing;
@@ -44,6 +54,10 @@ int main(int argc, char* argv[]) {
 	char* input_dir = concat(argv[4], "/");
 	writing = open(argv[1], O_WRONLY, 0666);
 	reading = open(argv[2], O_RDONLY, 0666);
+	// check for possible errors while opening the pipes
+	if (reading == -1 || writing == -1) {
+		perror("open");
+	}
 	// if "init is given, then during parsing we must print the stats"
 	bool print_stats = (strcmp(argv[5], "init") == 0);
 	// Variables to stroe statistics for records.
@@ -63,8 +77,9 @@ int main(int argc, char* argv[]) {
 	while (true) {
 		str = read_from_pipe(reading, buff_size);
 		// break when "end" is sent by the parent
-		if (! strcmp(str, "end"))
+		if (! strcmp(str, "end")) 
 			break;
+		fprintf(stderr, "%s\n", str);
 		list_insert(dirs, str);
 
 	}
@@ -76,68 +91,74 @@ int main(int argc, char* argv[]) {
 		while (true) {
 			// read the instruction from the pipe
 			char* query = read_from_pipe(reading, buff_size);
+			// fprintf(stderr, "%d is here\n", getpid());
 			// check for a possible signal
-			fprintf(stderr, "pid is %d value is %d\n", getpid(), sig_int_raised);
 			// If a sigint or sigquit are caught
 			if (sig_int_raised) {
-				fprintf(stderr, "heeelp\n");
+				fprintf(stderr, "int caught in main\n");
 				// Just goto the exiting procedure
 				goto EXIT_IF;
 			}
 			// if a sigusr1 is raised
 			if (sig_usr1_raised) {
+				fprintf(stderr, "usr1 caught in main\n");
 				// parse the correct files, by giving the parsed list so we do not read all the files again
 				parser(input_dir, buff_size, dirs, parsed_files, writing, patients, diseases_hash, &success, &failed, print_stats);
 				// inform the parent that we've read stuff by sending a sigusr2
 				kill(getppid(), SIGUSR2);
+				// restore the value of the gloval signal variable
+				sig_usr1_raised = 0;
 			}
-			// check if an exit command is given
-			if (strstr(query, "/exit")) {
-			EXIT_IF: 	fprintf(stderr, "here\n");
-				// TODO: Maybe add to a function instead
-				// free the memory occupied by our data structures
-				hash_destroy(diseases_hash);
-				// hash_destroy(patients);
+			if (query != NULL) {
+				fprintf(stderr, "reached in in %d\n", getpid());
+				// check if an exit command is given
+				if (strstr(query, "/exit")) {
+				EXIT_IF: 	fprintf(stderr, "here\n");
+					// TODO: Maybe add to a function instead
+					// free the memory occupied by our data structures
+					hash_destroy(diseases_hash);
+					// hash_destroy(patients);
 
-				// create a directory to store our log files
-				mkdir("../logs", PERMS);
+					// create a directory to store our log files
+					mkdir("../logs", PERMS);
 
-				// create a log file to store what we've achieved
-				char* f_name = concat("../logs/log_file.", itoa(getpid()));
-				FILE* log_file = fopen(f_name, "w+");
-				// free(f_name);
-				if (log_file == NULL) {
-					perror("creating");
-					exit(EXIT_FAILURE);
+					// create a log file to store what we've achieved
+					char* f_name = concat("../logs/log_file.", itoa(getpid()));
+					FILE* log_file = fopen(f_name, "w+");
+					// free(f_name);
+					if (log_file == NULL) {
+						perror("creating");
+						exit(EXIT_FAILURE);
+					}
+					// print all the dirs that we handled
+					for (int i = 0; i < dirs->size; i++) {
+						char* country = list_nth(dirs, i);
+						fprintf(log_file, "%s\n", country);
+					}
+					// write the total query stats
+					fprintf(log_file, "\nTOTAL %d\nSUCCESS %d\n FAILED %d\n", (success + failed), success, failed);
+					// close the log file descriptor
+					fclose(log_file);
+					// free the list of the countries given
+					destroy_list(dirs);
+					// inform the parent that we've ended our job
+					write_to_pipe(writing, buff_size, "ready");
+					// close the pipes
+					close(reading); close(writing);
+					// if we are here because of an interupt, just exit
+					if (sig_int_raised)
+						exit(EXIT_SUCCESS);
+					// Finally, wait forever until the parent sends a SIGKILL that will exit the worker
+					while(true);
 				}
-				// print all the dirs that we handled
-				for (int i = 0; i < dirs->size; i++) {
-					char* country = list_nth(dirs, i);
-					fprintf(log_file, "%s\n", country);
+				// call the menu to analyze the query and return the result
+				bool result = worker_menu(query, dirs, patients, diseases_hash, writing, buff_size);
+				// check if an error has occured (returned null), thus we must not write in the pipe
+				if (result) {
+					success++;
+				} else {
+					failed++;
 				}
-				// write the total query stats
-				fprintf(log_file, "\nTOTAL %d\nSUCCESS %d\n FAILED %d\n", (success + failed), success, failed);
-				// close the log file descriptor
-				fclose(log_file);
-				// free the list of the countries given
-				destroy_list(dirs);
-				// inform the parent that we've ended our job
-				write_to_pipe(writing, buff_size, "ready");
-				// close the pipes
-				close(reading); close(writing);
-				// if we are here because of an interupt, just exit
-				if (sig_int_raised)
-					exit(EXIT_SUCCESS);
-				// Finally, wait forever until the parent sends a SIGKILL that will exit the worker
-				while(true);
-			}
-			// call the menu to analyze the query and return the result
-			bool result = worker_menu(query, dirs, patients, diseases_hash, writing, buff_size);
-			// check if an error has occured (returned null), thus we must not write in the pipe
-			if (result) {
-				success++;
-			} else {
-				failed++;
 			}
 		} 
 	} else {
