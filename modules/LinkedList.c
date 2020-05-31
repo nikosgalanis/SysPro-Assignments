@@ -69,6 +69,7 @@ Pointer list_nth(List list, int n) {
     return NULL;
 }
 
+// check if a list is empty
 bool is_empty(List list) {
     return (list->size == 0);
 }

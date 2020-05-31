@@ -110,6 +110,7 @@ char* read_from_pipe(int fd, int buff_size) {
             }
         }
     }
+	// last byte of the new string must be \0
 	info[n_bytes] = '\0';
     // finally, return the whole message
 	return info;

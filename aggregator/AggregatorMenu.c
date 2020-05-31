@@ -346,7 +346,7 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
 			for (int i = 0; i < n_workers; i++) {
 				char* response = read_from_pipe(reading[i], buff_size);
 				if (strcmp(response, "ready")) {
-					printf("Somehting unexpected happened. Exiting...\n");
+=					printf("Somehting unexpected happened. Exiting...\n");
 				}
 				free(response);
 			}
@@ -417,10 +417,11 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
 			for (int i = 0; i < n_workers; i++) {
 				if (FD_ISSET(reading[i], &read)) {
 					// print the stats from this worker
-					char* n = read_from_pipe(reading[i], buff_size);
-					int n_files = atoi(n);
-					for (int j = 0; j < n_files; j++) {
+					while (true) {
 						char* name = read_from_pipe(reading[i], buff_size);
+						// read until an "end" is given
+						if (!strcmp(name, "end"))
+							break;
 						char* country = read_from_pipe(reading[i], buff_size);
 						char* n_dis = read_from_pipe(reading[i], buff_size);
 						int n_diseases = atoi(n_dis);

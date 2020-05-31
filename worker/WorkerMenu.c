@@ -24,7 +24,6 @@ bool worker_menu(char* qu, List dirs, HashTable patients, HashTable diseases_has
         // if a country is specified, then just return the number
         if (country) {
             res = disease_frequency(virus, arg2, arg3, country, diseases_hash);
-            // return itoa(res);
         }
         else {
             for (int i = 0; i < dirs->size; i++) {
@@ -32,7 +31,6 @@ bool worker_menu(char* qu, List dirs, HashTable patients, HashTable diseases_has
                 res += disease_frequency(virus, arg2, arg3, curr_country, diseases_hash);
             }
             free(qu);
-            // return itoa(res);
         }
         write_to_pipe(write, buffsize, itoa(res));
         return true;
@@ -156,7 +154,7 @@ bool worker_menu(char* qu, List dirs, HashTable patients, HashTable diseases_has
             return true;
         }
     } else {
-        // fprintf(stderr, "Query not recognized %s\n", qu);
+        fprintf(stderr, "Query not recognized by worker: %s\n", qu);
         free(qu);
         return false;
     }

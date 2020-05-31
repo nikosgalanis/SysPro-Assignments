@@ -15,16 +15,10 @@
 #include <sys/select.h>
 #include "stats.h"
 
-
 // declaration of the menu function
 void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_size, HashTable hash, char** names1, char** names2, char* input_dir);
 
 void aggregator(int n_workers, int buff_size, char* input_dir) {
-    // static struct sigaction act;
-    // act.sa_handler = catch_int;
-    // sigfillset(&(act.sa_mask));
-
-    // sigaction(SIGINT, &act, NULL);
     // hold a pointer for the subdirs that we are going to check
     struct dirent* sub_dir;
     // Open the input dir given by the user
@@ -36,10 +30,6 @@ void aggregator(int n_workers, int buff_size, char* input_dir) {
     }
     // Create n_workers child processes with fork, and then exec to redirect to another executable
     pid_t pid;
-    // sleep(5);
-    // if (sig_int_raised) {
-    //     fprintf(stderr, "here\n");
-    // }
     // arrays to store the file descs coming from the pipes for reading and writing
     int reading[n_workers]; int writing[n_workers];
     // array to store the pids of the childs

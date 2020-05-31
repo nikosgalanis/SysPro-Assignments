@@ -86,12 +86,11 @@ int main(int argc, char* argv[]) {
 	// proceed only if the worker is assigned with at least one country
 	if (!is_empty(dirs)) {
 		// call the function to parse the whole input and send the stats back to the parent
-		parser(input_dir, buff_size, dirs, parsed_files, writing, patients, diseases_hash, &success, &failed, print_stats);
+		parser(input_dir, buff_size, dirs, parsed_files, writing, patients, diseases_hash, &success, &failed, print_stats, false);
 		// read queries until we break
 		while (true) {
 			// read the instruction from the pipe
 			char* query = read_from_pipe(reading, buff_size);
-			// fprintf(stderr, "%d is here\n", getpid());
 			// check for a possible signal
 			// If a sigint or sigquit are caught
 			if (sig_int_raised) {
@@ -103,7 +102,7 @@ int main(int argc, char* argv[]) {
 			if (sig_usr1_raised) {
 				fprintf(stderr, "usr1 caught in main\n");
 				// parse the correct files, by giving the parsed list so we do not read all the files again
-				parser(input_dir, buff_size, dirs, parsed_files, writing, patients, diseases_hash, &success, &failed, print_stats);
+				parser(input_dir, buff_size, dirs, parsed_files, writing, patients, diseases_hash, &success, &failed, true, true);
 				// inform the parent that we've read stuff by sending a sigusr2
 				kill(getppid(), SIGUSR2);
 				// restore the value of the gloval signal variable
