@@ -6,7 +6,6 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <errno.h>
-#include "Handlers.h"
 #include <fcntl.h>
 
 volatile sig_atomic_t sig_int_raised;
@@ -15,14 +14,10 @@ volatile sig_atomic_t sig_usr_raised;
 // sigint handler
 void catch_int(int signo) {
     sig_int_raised = signo;
-    fprintf(stderr, "\nCatching : signo\n");
-	fprintf(stderr, "%d\n", sig_int_raised);
 }
 // sigusr handler
 void catch_usr(int signo) {
     sig_usr_raised = signo;
-    fprintf(stderr, "\nCatching : signo\n");
-	fprintf(stderr, "%d\n", sig_usr_raised);
 }
 
 // List countries query, designated for the monitor, as he is the onnly one who has all the info ensembled
@@ -77,14 +72,13 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
 			pid_t new_pid = fork();
 			// new names for new pipes
 			char* str_i = itoa(pos);
-			char* new_name1 = concat("../tmp/fifo_new_1_", str_i);
-			char* new_name2 = concat("../tmp/fifo_new_2_", str_i);
+			char* new_name1 = concat("./tmp/fifo_new_1_", str_i);
+			char* new_name2 = concat("./tmp/fifo_new_2_", str_i);
 			names1[pos] = new_name1;
 			names2[pos] = new_name2;
 			free(str_i);
 			if (new_pid > 0) {
 				// we are in the parent
-				fprintf(stderr, "We are in parent\n");
 				// Create __two__ new named pipes, so the process can write in one of them
 				if (mkfifo(new_name1, 0666) == -1) {
 					if (errno != EEXIST) {
@@ -101,7 +95,7 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
 				}
 			} else {
 				// we are in the child, so call exec to go to the worker's code
-				execl("../worker/worker", "worker", new_name1, new_name2, itoa(buff_size), input_dir, "new", NULL);
+				execl("./worker/worker", "worker", new_name1, new_name2, itoa(buff_size), input_dir, "new", NULL);
 				// if we reach this point, then exec has returned, so sthg wrong has happened
 				perror("execl");
 				exit(EXIT_FAILURE);
@@ -346,7 +340,7 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
 			for (int i = 0; i < n_workers; i++) {
 				char* response = read_from_pipe(reading[i], buff_size);
 				if (strcmp(response, "ready")) {
-=					printf("Somehting unexpected happened. Exiting...\n");
+					printf("Somehting unexpected happened. Exiting...\n");
 				}
 				free(response);
 			}
@@ -366,13 +360,11 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
 		for (int i = 0; i < n_workers; i++) {
 			write_to_pipe(writing[i], buff_size, "/exit");
 		}
-		fprintf(stderr, "heeeeere\n");
 		// wait to get a respose from him that he is ready to die
 		for (int i = 0; i < n_workers; i++) {
 			char* response = read_from_pipe(reading[i], buff_size);
 			if (strcmp(response, "ready")) {
-				// printf("Somehting unexpected happened. Exiting...\n");
-				fprintf(stderr, "Bad response\"%s\"\n", response);
+				printf("Somehting unexpected happened. Exiting...\n");
 			}
 			free(response);
 		}
@@ -381,9 +373,9 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
 			kill(workers_ids[i], SIGKILL);
 		}
 		// create a directory to store our log files
-		mkdir("../logs", PERMS);
+		mkdir("./logs", PERMS);
 		// create a log file to store what we've achieved
-		char* f_name = concat("../logs/log_file.", itoa(getpid()));
+		char* f_name = concat("./logs/log_file.", itoa(getpid()));
 		// open the file
 		FILE* log_file = fopen(f_name, "w+");
 		// free(f_name);
@@ -410,8 +402,11 @@ void menu(int* reading, int* writing, int n_workers, int* workers_ids, int buff_
 		for (int i = 0; i < n_workers; i++) {
 			FD_SET(reading[i], &active);
 		}
+		read = active;
+
 		if (select(FD_SETSIZE, &read, NULL, NULL, NULL) < 0) {
-			fprintf(stderr, "No new files added, continuing\n");
+			perror("select:");
+			// fprintf(stderr, "No new files added, continuing\n");
 		} else {
 			// parse all the workers till we find the one that has written something
 			for (int i = 0; i < n_workers; i++) {

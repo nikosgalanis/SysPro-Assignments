@@ -121,7 +121,7 @@ bool worker_menu(char* qu, List dirs, HashTable patients, HashTable diseases_has
             return false;
         }
         char* q = strtok(query, delim);
-        if (strcmp(q, "/numPatientAdmissions") || strcmp(q, "/numPatientDischarges")) {
+        if (strcmp(q, "/numPatientDischarges")) {
             free(qu);
             return false;
         }
@@ -132,7 +132,7 @@ bool worker_menu(char* qu, List dirs, HashTable patients, HashTable diseases_has
         // If the query is specified for 1 country
         if (country) {
             // just write it to the pipe
-            char* result = num_patient_admissions(virus, arg2, arg3, country, diseases_hash);
+            char* result = num_patient_discharges(virus, arg2, arg3, country, diseases_hash);
             write_to_pipe(write, buffsize, result);
             free(result);
             return true;

@@ -14,6 +14,7 @@ CC_FLAGS = -Wall -g -I$(INC_DIRS)
 
 $(TARGET_EXEC): $(OBJS)
 	$(CC) $(OBJS) -o $@
+	mv $(TARGET_EXEC) ..
 
 # c source
 $(BUILD_DIR)/%.c.o: %.c

@@ -43,7 +43,6 @@ void print_todays_stats(Pointer ent, Pointer buffer_size, Pointer f_desc, Pointe
 void parser(char* input_dir, int buff_size, List dirs, List parsed_files, int writing, HashTable patients, HashTable diseases_hash, int* success, int* failed, bool print_stats, bool from_signal) {
     // inform the parent how many stat strings he will read
     int n_files = n_files_in_worker(input_dir, dirs);
-    bool written = false;
     if (print_stats && (!from_signal))
         write_to_pipe(writing, buff_size, itoa(n_files));
     // for every directory/country that the worker must parse
@@ -71,8 +70,6 @@ void parser(char* input_dir, int buff_size, List dirs, List parsed_files, int wr
             char* file_name = concat(directory, temp_name);
             // parse the file if it has not allready been parsed
             if (!in_list(parsed_files, file_name)) {
-                // we've written at least one file!
-                written = true;
                 // insert the file into that list so we remember it for later
                 list_insert(parsed_files, file_name);
                 // open the file that we want to parse
@@ -118,7 +115,8 @@ void parser(char* input_dir, int buff_size, List dirs, List parsed_files, int wr
                             if (patient_entry == NULL) {
                                 hash_insert(patients, p->id, p);
                             } else {
-                                fprintf(stderr, "error\n");
+                                if (print_stats)
+                                    fprintf(stderr, "error\n");
                                 (*failed)++;
                             }
                             // search for the disease for the stats
@@ -153,7 +151,8 @@ void parser(char* input_dir, int buff_size, List dirs, List parsed_files, int wr
                     } else {
                         // else, the patient must exit, with exit date the name of the file
                         if (recordPatientExit(record, patients, temp_name) == false) {
-                            fprintf(stderr, "error\n");
+                            if (print_stats)
+                                fprintf(stderr, "error\n");
                             (*failed)++;
                         } else {
                             (*success)++;

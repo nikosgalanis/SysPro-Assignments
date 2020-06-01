@@ -13,15 +13,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-// void globalDiseaseStats(char* info);
-// void diseaseFrequency(char* info);
-// void topk_Diseases(char* info);
-// void topk_Countries(char* info);
-// void insertPatientRecord(char* info);
-// void recordPatientExit(char* info);
-// void numCurrentPatients(char* info);
-// void exit_monitor(void);
-
 bool recordPatientExit(char* info, HashTable patients, char* exit_d);
 int disease_frequency(char* virus, char* arg2, char* arg3, char* country, HashTable diseases_hash);
 char* search_patient_record(char* r_id, HashTable patients);

@@ -3,10 +3,6 @@
 #include "Patient.h"
 #include <string.h>
 #include <stdio.h>
-// Return the max value between 2 ints
-int max(int a, int b) {
-	return (a > b) ? a : b;
-}
 
 extern Pointer empty;
 
@@ -30,93 +26,9 @@ BalancedTree create_balanced_tree(CompareFunc compare, DestroyFunc destroy) {
 	return create_binary_tree(compare, destroy);
 }
 
-// Find the height of a balanced tree node
-int height(TreeNode node) {
-	return node != NULL ? node->height : 0;
-}
-
-// return the balance of the node (aka the difference between the 2 subtrees)
-int node_balance(TreeNode node) {
-	return height(node->left) - height(node->right);
-}
-
-// Update the node height
-void update_node_height(TreeNode node) {
-	node->height = max(height(node->right), height(node->left)) + 1;
-}
-
-//========Implementation of the 4 esential tree rotations=========//
-
-TreeNode right_rotation(TreeNode node) {
-	TreeNode left = node->left;
-	TreeNode left_right = left->right;
-
-	left->right = node;
-	node->left = left_right;
-
-	update_node_height(node);
-	update_node_height(left);
-
-	return left;
-}
-
-TreeNode left_rotation(TreeNode node) {
-	TreeNode right = node->right;
-	TreeNode right_left = right->left;
-
-	right->left = node;
-	node->right = right_left;
-
-	update_node_height(node);
-	update_node_height(right);
-
-	return right;
-}
-
-TreeNode left_right_rotation(TreeNode node) {
-	node->left = left_rotation(node->left);
-	return right_rotation(node);
-}
-
-TreeNode right_left_rotation(TreeNode node) {
-	node->right = right_rotation(node->right);
-	return left_rotation(node);
-}
-
-// Make sure that the balanced property is maintained. If not, repair it
-TreeNode maintain_property(TreeNode node) {
-	update_node_height(node);
-	int balance = node_balance(node);
-	// If the right subtree is unbalanced
-	if (balance < -1) {
-		if (node_balance(node->right) >= 0) {
-			return right_left_rotation(node);
-		} else {
-			return left_rotation(node);
-		}
-	} else if (balance > 1) { // If the left subtree is unbalanced
-		if (node_balance(node->left) >= 0) {
-			return right_rotation(node);
-		} else {
-			return left_right_rotation(node);
-		}
-	} else {   // Everything is balanced! Just return the node, no rotation needed
-		return node;
-	}
-}
-
+// insert a node to the dree
 TreeNode insert_node_to_tree(Tree tree, TreeNode node, BalancedTreeEntry entry) {
-	if (node == NULL) {
-		// Base case, if we reach a leaf, insert the entry
-		return create_binary_node(entry);
-	}
-	// Apply the rules of binary search
-	if (tree->compare(entry, node->value) <= 0) {
-		node->left = insert_node_to_tree(tree, node->left, entry);
-	} else {
-		node->right = insert_node_to_tree(tree, node->right, entry);
-	}
-	return maintain_property(node);
+	return insert_binary_node(node, tree->compare, entry);
 }
 
 // Give the root of the tree, in order to insert a new entry to it.

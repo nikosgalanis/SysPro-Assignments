@@ -19,14 +19,10 @@ volatile sig_atomic_t sig_usr1_raised;
 
 void catch_int(int signo) {
     sig_int_raised = signo;
-    fprintf(stderr, "\nCatching : signo\n");
-	fprintf(stderr, "%d\n", sig_int_raised);
 }
 
 void catch_usr1(int signo) {
     sig_usr1_raised = signo;
-    fprintf(stderr, "\nCatching : signo\n");
-	fprintf(stderr, "%d\n", sig_usr1_raised);
 }
 
 int main(int argc, char* argv[]) {
@@ -109,20 +105,19 @@ int main(int argc, char* argv[]) {
 				sig_usr1_raised = 0;
 			}
 			if (query != NULL) {
-				fprintf(stderr, "reached in in %d\n", getpid());
 				// check if an exit command is given
 				if (strstr(query, "/exit")) {
-				EXIT_IF: 	fprintf(stderr, "here\n");
+				EXIT_IF: 	fprintf(stderr, "Child exiting\n");
 					// TODO: Maybe add to a function instead
 					// free the memory occupied by our data structures
 					hash_destroy(diseases_hash);
 					// hash_destroy(patients);
 
 					// create a directory to store our log files
-					mkdir("../logs", PERMS);
+					mkdir("./logs", PERMS);
 
 					// create a log file to store what we've achieved
-					char* f_name = concat("../logs/log_file.", itoa(getpid()));
+					char* f_name = concat("./logs/log_file.", itoa(getpid()));
 					FILE* log_file = fopen(f_name, "w+");
 					// free(f_name);
 					if (log_file == NULL) {

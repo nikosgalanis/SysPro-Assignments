@@ -117,7 +117,7 @@ char* search_patient_record(char* r_id, HashTable patients) {
 }
 
 char* num_patient_admissions(char* disease, char* arg2, char* arg3, char* country, HashTable diseases_hash) {
-	// Convert the input strings to dates	char* a2 = strdup(arg2);
+	// Convert the input strings to dates
 	char* a2 = strdup(arg2);
 	char* a3 = strdup(arg3);
 	Date d1 = string_to_date(a2);
@@ -138,7 +138,7 @@ char* num_patient_admissions(char* disease, char* arg2, char* arg3, char* countr
 }
 
 char* num_patient_discharges(char* disease, char* arg2, char* arg3, char* country, HashTable diseases_hash) {
-	// Convert the input strings to dates	char* a2 = strdup(arg2);
+	// Convert the input strings to dates
 	char* a2 = strdup(arg2);
 	char* a3 = strdup(arg3);
 	Date d1 = string_to_date(a2);
@@ -150,7 +150,7 @@ char* num_patient_discharges(char* disease, char* arg2, char* arg3, char* countr
 		return NULL;
 	}
 	// all the ones that are after date 2, except those that are after date 1
-	int res = balanced_tree_cond_traverse(disease_tree, check_bigger_exit_date, &d1, NULL, NULL) - balanced_tree_cond_traverse(disease_tree, check_bigger_exit_date, &d2, NULL, NULL);
+	int res = balanced_tree_cond_traverse(disease_tree, check_bigger_exit_date, &d1, country, NULL) - balanced_tree_cond_traverse(disease_tree, check_bigger_exit_date, &d2, country, NULL);
 	int len = strlen(country) + strlen(itoa(res)) + 3;
 	char* to_return = malloc(len * sizeof(*to_return));
 	sprintf(to_return, "%15s %d\n", country, res);
