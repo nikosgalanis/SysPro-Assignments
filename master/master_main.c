@@ -1,8 +1,8 @@
 #include "common_types.h"
 
 int main(int argc, char* argv[]) {
-	int n_workers, buffer_size, server_port;
-	char* input_dir, *server_ip;
+	int n_workers, buffer_size;
+	char* input_dir, *server_ip, *server_port;
 	// check the arguments given
 	if (argc != 11) {
 		fprintf(stderr, "Usage: ./master –w numWorkers -b bufferSize –s serverIP –p serverPort -i input_dir");
@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
 		exit(EXIT_FAILURE);
 	}
 	if (! strcmp(argv[7], "-p")) {
-		server_port = atoi(argv[8]);
+		server_port = strdup(argv[8]);
 	} else {
 		fprintf(stderr, "Usage: ./master –w numWorkers -b bufferSize –s serverIP –p serverPort -i input_dir");
 		exit(EXIT_FAILURE);
@@ -42,6 +42,7 @@ int main(int argc, char* argv[]) {
 	// free those in order to not have any leaks
 	free(input_dir);
 	free(server_ip);
+	free(server_port);
 	// everything is sound!
 	exit(EXIT_SUCCESS);
 }

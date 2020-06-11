@@ -6,7 +6,7 @@
 #include <assert.h>
 #include <unistd.h>
 
-
+#define perror2(s, e) fprintf(stderr, "%s: %s\n", s, strerror(e))
 #define STRING_SIZE 1024
 #define HASH_SIZE 100
 #define BUCKET_SIZE 100
