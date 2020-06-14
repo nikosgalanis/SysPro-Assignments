@@ -14,12 +14,11 @@
 #include "parser.h"
 
 // visit function for the ht in order to read and print the stats in the desired output
-void print_todays_stats(Pointer ent, Pointer buffer_size, Pointer f_desc, Pointer dummy1, Pointer dummy2) {
+void print_todays_stats(Pointer ent, Pointer dummy, Pointer f_desc, Pointer dummy1, Pointer dummy2) {
 	HashEntry entry = (HashEntry)ent;
 	int fd = *(int*)f_desc;
-	int buff_size = *(int*)buffer_size; 
 	// write the disease to the pipe
-	write_to_pipe(fd, buff_size, entry->key);
+	write_to_pipe(fd, entry->key, strlen(entry->key));
 	int* age_groups = (int*)entry->item;
 	// collect data and add them to a string
 	char* group1  = malloc(40 * sizeof(*group1));
@@ -37,14 +36,13 @@ void print_todays_stats(Pointer ent, Pointer buffer_size, Pointer f_desc, Pointe
 	// free the temp strings allocated
 	free(group1); free(group2); free(group3); free(group4);
 	// write the final string in the pipe
-	write_to_pipe(fd, buff_size, final);
+	write_to_pipe(fd, final, strlen(final));
 }
 
-void parser(char* input_dir, int buff_size, List dirs, int writing, HashTable patients, HashTable diseases_hash, int* success, int* failed, bool print_stats, bool from_signal) {
+void parser(char* input_dir, List dirs, int writing, HashTable patients, HashTable diseases_hash) {
     // inform the parent how many stat strings he will read
     int n_files = n_files_in_worker(input_dir, dirs);
-    if (print_stats && (!from_signal))
-        write_to_pipe(writing, buff_size, itoa(n_files));
+    write(writing, n_files, strlen(n_files));
     // for every directory/country that the worker must parse
     for (int i = 0; i < dirs->size; i++) {
         // find the dir name
@@ -75,11 +73,9 @@ void parser(char* input_dir, int buff_size, List dirs, int writing, HashTable pa
                 exit(EXIT_FAILURE);
             }
             // Begin thje writing of the stats in the pipe
-            if (print_stats)
-                write_to_pipe(writing, buff_size, temp_name);
+            write(writing, temp_name, strlen(temp_name));
             char* country_to_send = list_nth(dirs, i);
-            if (print_stats)
-                write_to_pipe(writing, buff_size, country_to_send);
+            write(writing, country_to_send, strlen(country_to_send));
             // allocate size for the string that will temporary store the records
             char* record = malloc(STRING_SIZE * sizeof(*record));
             
@@ -110,10 +106,6 @@ void parser(char* input_dir, int buff_size, List dirs, int writing, HashTable pa
                         HashEntry patient_entry = hash_search(patients, p->id);
                         if (patient_entry == NULL) {
                             hash_insert(patients, p->id, p);
-                        } else {
-                            if (print_stats)
-                                fprintf(stderr, "error\n");
-                            (*failed)++;
                         }
                         // search for the disease for the stats
                         HashEntry todays_disease_result = hash_search(todays_diseases, p->disease);
@@ -140,37 +132,19 @@ void parser(char* input_dir, int buff_size, List dirs, int writing, HashTable pa
                             age_groups[3]++;
                         // update the hash entry
                         hash_update(todays_diseases, p->disease, age_groups);
-                        (*success)++;
-                    } else {
-                        (*failed)++;
-                    }
-                } else {
-                    // else, the patient must exit, with exit date the name of the file
-                    if (recordPatientExit(record, patients, temp_name) == false) {
-                        if (print_stats)
-                            fprintf(stderr, "error\n");
-                        (*failed)++;
-                    } else {
-                        (*success)++;
                     }
                 }
             }
             // inform the parent how many diseases to read
             char* n_dis = itoa(todays_diseases->items);
-            if (print_stats) {
-                write_to_pipe(writing, buff_size, n_dis);
+                write(writing, n_dis, strlen(n_dis));
                 // traverse the ht to send the stats to the pipe
-                hash_traverse(todays_diseases, print_todays_stats, &buff_size, &writing, NULL);
-            }
+                hash_traverse(todays_diseases, print_todays_stats, NULL, &writing, NULL);
             // close the file that we just parsed
             fclose(curr_file);
             // destroy the ht for this file, in order to avoid leaks
             hash_destroy(todays_diseases);
         }
         closedir(dir);
-    }
-    // if a signal initiated the parsing, we end our report with the word "end"
-    if (from_signal) {
-        write_to_pipe(writing, buff_size, "end");
     }
 }

@@ -12,6 +12,7 @@
 #define BUCKET_SIZE 100
 #define FAILED -1
 #define PERMS 0777
+#define MAX_ALIVE_CONNECTIONS 10
 // Usefull typedefs
 typedef void* Pointer;
 

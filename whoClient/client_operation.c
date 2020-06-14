@@ -63,6 +63,7 @@ Pointer thread_operate(Pointer q) {
 	res = read(sock, &answer, 50);
 	// print the answer;
 	fprintf(stdout, "%s\n", answer);
+	//TODO: Close the connection
 	// operation done! unlock the mutex
 	pthread_mutex_unlock(&counter_lock);
 	// the thread can now exit
