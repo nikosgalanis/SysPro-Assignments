@@ -143,6 +143,25 @@ void write_to_pipe(int fd, int buff_size, char* info) {
 	}
 }
 
+// read a message from a socket, based on our communication protocol
+char* read_from_socket(int fd) {
+	int len;
+	// read the length of the message
+	read(fd, &len, sizeof(int));
+	// allocate space for our message
+	char* res = malloc(len * sizeof(*res));
+	// read the message from the socket
+	write(fd, res, len);
+	return res;
+}
+
+int write_to_stocket(int fd, char* buff, int len) {
+	// write the length of the message to the socket
+	write(fd, &len, sizeof(int));
+	// write the message to the socket
+	return write(fd, buff, len);
+}
+
 // Function to traverse our dirs_to_workers hash table
 void print_list_contents(Pointer ent, Pointer d1, Pointer d2, Pointer d3, Pointer d4) {
     HashEntry entry = (HashEntry)ent;

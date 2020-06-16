@@ -1,7 +1,7 @@
 #include "common_types.h"
 
 // prototype for our operation function
-void server_operation(int n_threads, char* query_file, char* server_ip, char* server_port);
+void server_operation(char* query_port, char* stats_port, int buffer_size, int num_threads);
 
 int main(int argc, char* argv[]) {
 	int num_threads, buffer_size;

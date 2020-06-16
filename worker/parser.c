@@ -11,7 +11,6 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "parser.h"
 
 // visit function for the ht in order to read and print the stats in the desired output
 void print_todays_stats(Pointer ent, Pointer dummy, Pointer f_desc, Pointer dummy1, Pointer dummy2) {
@@ -35,14 +34,16 @@ void print_todays_stats(Pointer ent, Pointer dummy, Pointer f_desc, Pointer dumm
 	sprintf(final, "%s%s%s%s\n", group1, group2, group3, group4);
 	// free the temp strings allocated
 	free(group1); free(group2); free(group3); free(group4);
-	// write the final string in the pipe
-	write_to_pipe(fd, final, strlen(final));
+	// write the final string in the socket
+	write_to_stocket(fd, final, strlen(final));
 }
 
 void parser(char* input_dir, List dirs, int writing, HashTable patients, HashTable diseases_hash) {
-    // inform the parent how many stat strings he will read
+    // inform the server that this is a stats string
+    write(writing, "s", sizeof(char)); //TODO: Maybe add a \0?
+    // inform the server how many stat strings he will read
     int n_files = n_files_in_worker(input_dir, dirs);
-    write(writing, n_files, strlen(n_files));
+    write_to_stocket(writing, n_files, strlen(n_files));
     // for every directory/country that the worker must parse
     for (int i = 0; i < dirs->size; i++) {
         // find the dir name
@@ -73,9 +74,9 @@ void parser(char* input_dir, List dirs, int writing, HashTable patients, HashTab
                 exit(EXIT_FAILURE);
             }
             // Begin thje writing of the stats in the pipe
-            write(writing, temp_name, strlen(temp_name));
+            write_to_stocket(writing, temp_name, strlen(temp_name));
             char* country_to_send = list_nth(dirs, i);
-            write(writing, country_to_send, strlen(country_to_send));
+            write_to_stocket(writing, country_to_send, strlen(country_to_send));
             // allocate size for the string that will temporary store the records
             char* record = malloc(STRING_SIZE * sizeof(*record));
             
@@ -137,7 +138,7 @@ void parser(char* input_dir, List dirs, int writing, HashTable patients, HashTab
             }
             // inform the parent how many diseases to read
             char* n_dis = itoa(todays_diseases->items);
-                write(writing, n_dis, strlen(n_dis));
+                write_to_stocket(writing, n_dis, strlen(n_dis));
                 // traverse the ht to send the stats to the pipe
                 hash_traverse(todays_diseases, print_todays_stats, NULL, &writing, NULL);
             // close the file that we just parsed

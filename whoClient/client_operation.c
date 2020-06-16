@@ -52,17 +52,19 @@ Pointer thread_operate(Pointer q) {
 		exit(EXIT_FAILURE);
 	}
 	fprintf(stdout, "Connection to server initialized by thread %ld", pthread_self());
+	// inform the server that we are sending a query
+	write(sock, "q", sizeof(char));
 	// write the instruction to the server
-	int res = write(sock, wrap->query, strlen(wrap->query) + 1);
+	int res = write_to_socket(sock, wrap->query, strlen(wrap->query) + 1);
 	if (res < 0) {
 		perror("write");
 		exit(EXIT_FAILURE);
 	}
-	char answer[50];
 	// read the answer from the server
-	res = read(sock, &answer, 50);
+	char* answer = read_from_socket(sock);
 	// print the answer;
 	fprintf(stdout, "%s\n", answer);
+	free(answer);
 	//TODO: Close the connection
 	// operation done! unlock the mutex
 	pthread_mutex_unlock(&counter_lock);

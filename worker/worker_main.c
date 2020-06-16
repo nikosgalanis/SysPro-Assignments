@@ -165,7 +165,6 @@ int main(int argc, char* argv[]) {
 				// check if an exit command is given
 				if (strstr(query, "/exit")) {
 				EXIT_IF: 	fprintf(stderr, "Child exiting\n");
-					// TODO: Maybe add to a function instead
 					// free the memory occupied by our data structures
 					hash_destroy(diseases_hash);
 					// free the list of the countries given
