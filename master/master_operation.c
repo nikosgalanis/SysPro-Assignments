@@ -59,15 +59,15 @@ void operation(int n_workers, int buff_size, char* input_dir, char* server_ip, c
 	int reading[n_workers]; int writing[n_workers];
 	// array to store the pids of the childs
 	pid_t workers_ids[n_workers];
-	mkdir("./tmp", S_IRWXU | S_IRWXG | S_IRWXO);
+	mkdir("../tmp", S_IRWXU | S_IRWXG | S_IRWXO);
 	char* names_1[n_workers];
 	char* names_2[n_workers];
 	for (int i = 0; i < n_workers; i++) {
 		pid = fork();
 		// hold the name of the 2 named pipes
 		char* str_i = itoa(i);
-		names_1[i] = concat("./tmp/fifo_1_", str_i);
-		names_2[i] = concat("./tmp/fifo_2_", str_i);
+		names_1[i] = concat("../tmp/fifo_1_", str_i);
+		names_2[i] = concat("../tmp/fifo_2_", str_i);
 		free(str_i);
 		if (pid > 0) {
 			// the parent saves the child's pid
@@ -89,7 +89,7 @@ void operation(int n_workers, int buff_size, char* input_dir, char* server_ip, c
 		} else {
 			// The child does the rest
 			// call an exec function, in order to redirect the child in the worker file
-			execl("./worker/worker", "worker", names_1[i], names_2[i], itoa(buff_size), input_dir, "init", NULL);
+			execl("../worker/worker", "worker", names_1[i], names_2[i], itoa(buff_size), input_dir, "init", NULL);
 			// if we reach this point, then exec has returned, so sthg wrong has happened
 			perror("execl");
 			exit(EXIT_FAILURE);
@@ -98,8 +98,8 @@ void operation(int n_workers, int buff_size, char* input_dir, char* server_ip, c
 	// open the pipes and store the descriptors in the arrays that we have allocated
 	for (int i = 0; i < n_workers; i++) {
 		char* str_i = itoa(i);
-		char* name1 = concat("./tmp/fifo_1_", str_i);
-		char* name2 = concat("./tmp/fifo_2_", str_i);
+		char* name1 = concat("../tmp/fifo_1_", str_i);
+		char* name2 = concat("../tmp/fifo_2_", str_i);
 		free(str_i);
 		if ((reading[i] = open(name1, O_RDONLY, 0666)) == -1) {
 			perror("creating");
@@ -169,11 +169,6 @@ void operation(int n_workers, int buff_size, char* input_dir, char* server_ip, c
 	// update the nworkers variable in case that the dirs are less than the workers
 	int active_workers = (split_no == 0) ? remainder : n_workers;
 
-	// inform the active users about the ip addr and port no of the server
-	for (int i = 0; i < active_workers; i++) {
-		write_to_pipe(writing[i], buff_size, "end");
-	}
-
 	// stay alive and check for possibly dead children
 	while (true) {
 		pid_t dead_child;
@@ -183,7 +178,7 @@ void operation(int n_workers, int buff_size, char* input_dir, char* server_ip, c
 			fprintf(stderr, "Worker %d died\n", dead_child);
 			// we must replace the dead child with a new one
 			// get he position in the arrays
-			int pos = get_pos_from_pid(dead_child, workers_ids, n_workers);
+			int pos = get_pos_from_pid(dead_child, workers_ids, active_workers);
 			pid_t new_pid = fork();
 			// new names for new pipes
 			char* str_i = itoa(pos);

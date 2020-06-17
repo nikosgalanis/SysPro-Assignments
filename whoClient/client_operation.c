@@ -69,8 +69,7 @@ Pointer thread_operate(Pointer q) {
 	// operation done! unlock the mutex
 	pthread_mutex_unlock(&counter_lock);
 	// the thread can now exit
-	// TODO: Maybe pass a return parameter to inform main
-	pthread_exit(NULL);
+	pthread_exit(wrap);
 }
 
 void client_operation(int n_threads, char* query_file, char* server_ip, char* server_port) {
@@ -104,22 +103,23 @@ void client_operation(int n_threads, char* query_file, char* server_ip, char* se
 			exit(EXIT_FAILURE);
 		}
 		pthread_barrier_init(&barrier, NULL, curr_threads);
-		char* query;
+		char* query = NULL;
+		size_t len = 0;
 		for (int j = 0; j < curr_threads; j++) {
 			info wrap = malloc(sizeof(*wrap));
 			// read the query from the file given
-			int read = getline(&query, NULL, queries);
+			int read = getline(&query, &len, queries);
 			// catch a possible error
 			if (!read) {
 				perror("getline:");
 				exit(EXIT_FAILURE);
 			}
 			// initialize the info thar we're gonna send to the threads
-			wrap->query = query;
+			wrap->query = strdup(query);
 			wrap->server_ip = server_ip;
 			wrap->server_port = server_port;
 			// create a new thread
-			int res = pthread_create(&thread_ids[i], NULL, thread_operate, wrap);
+			int res = pthread_create(&thread_ids[j], NULL, thread_operate, wrap);
 			// catch a possible error
 			if (res) {
 				perror2("pthread_create", res);
@@ -127,15 +127,21 @@ void client_operation(int n_threads, char* query_file, char* server_ip, char* se
 			}
 		}
 		free(query);
+
 		// wait for each thread to finish its execution
 		for (int j = 0; j < curr_threads; j++) {
-			int res = pthread_join(thread_ids[i], NULL);
+			Pointer w;
+			int res = pthread_join(thread_ids[j], &w);
+			info wrap = (info)w;
+			free(wrap->query);
+			free(wrap);
 			if (res) {
 				perror2("pthread_join", res);
 				exit(EXIT_FAILURE);
 			}
 		}
 		pthread_barrier_destroy(&barrier);
+		free(thread_ids);
 	}
 	fclose(queries);
 	// everything is perfect! return to wrap it up!

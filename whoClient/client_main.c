@@ -8,32 +8,32 @@ int main(int argc, char* argv[]) {
 	char* query_file, *server_port, *server_ip;
 	// check the arguments given
 	if (argc != 9) {
-		fprintf(stderr, "Usage: ./whoClient –q queryFile -w numThreads –sp servPort –sip servIP");
+		fprintf(stderr, "Usage: ./whoClient –q queryFile -w numThreads –sp servPort –sip servIP\n");
 		exit(EXIT_FAILURE);
 	}
 	if (! strcmp(argv[1], "-q")) {
 		query_file = strdup(argv[2]);
 	} else {
-		fprintf(stderr, "Usage: ./whoClient –q queryFile -w numThreads –sp servPort –sip servIP");
+		fprintf(stderr, "Usage: ./whoClient –q queryFile -w numThreads –sp servPort –sip servIP\n");
 		exit(EXIT_FAILURE);
 	}
 	if (! strcmp(argv[3], "-w")) {
 		// TODO: Maybe avoid many threads
 		num_threads = atoi(argv[4]);
 	} else {
-		fprintf(stderr, "Usage: ./whoClient –q queryFile -w numThreads –sp servPort –sip servIP");
+		fprintf(stderr, "Usage: ./whoClient –q queryFile -w numThreads –sp servPort –sip servIP\n");
 		exit(EXIT_FAILURE);
 	}
 	if (! strcmp(argv[5], "-sp")) {
 		server_port = strdup(argv[6]);
 	} else {
-		fprintf(stderr, "Usage: ./whoClient –q queryFile -w numThreads –sp servPort –sip servIP");
+		fprintf(stderr, "Usage: ./whoClient –q queryFile -w numThreads –sp servPort –sip servIP\n");
 		exit(EXIT_FAILURE);
 	}
 	if (! strcmp(argv[7], "-sip")) {
 		server_ip = strdup(argv[8]);
 	} else {
-		fprintf(stderr, "Usage: ./whoClient –q queryFile -w numThreads –sp servPort –sip servIP");
+		fprintf(stderr, "Usage: ./whoClient –q queryFile -w numThreads –sp servPort –sip servIP\n");
 		exit(EXIT_FAILURE);
 	}
 	// call the operate function in order for the client to do his job

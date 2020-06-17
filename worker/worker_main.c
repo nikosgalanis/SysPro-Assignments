@@ -68,9 +68,41 @@ int main(int argc, char* argv[]) {
 		// break when "end" is sent by the parent
 		if (! strcmp(str, "end")) 
 			break;
-		fprintf(stderr, "%s\n", str);
 		list_insert(dirs, str);
 	}
+	// Now, we must open a new conection as a server, in order to answer to queries
+	struct sockaddr_in q_server, q_client;
+	struct sockaddr* q_serverptr = (struct sockaddr*)&q_server;
+	struct sockaddr* q_clientptr = (struct sockaddr*)&q_client;
+	struct hostent* q_rem;
+	int q_sock;
+	// create the socket for the queries
+	if ((q_sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+		perror("socket");
+		exit(EXIT_FAILURE);
+	}
+	// initialize our internet domain
+	q_server.sin_family = AF_INET;
+	q_server.sin_addr.s_addr = htonl(INADDR_ANY);
+	// initialize with port 0, so we let the os determine which port it is gonna give us
+	q_server.sin_port = htons(0);
+	// bind the socket to the address
+	if (bind(q_sock, q_serverptr, sizeof(q_server)) < 0) {
+		perror("bind");
+		exit(EXIT_FAILURE);
+	}
+	// listen for incoming connections
+	if (listen(q_sock, MAX_ALIVE_CONNECTIONS) < 0) {
+		perror("listen");
+		exit(EXIT_FAILURE);
+	}
+	// learn the port that was assigned by the os
+	struct sockaddr* temp = q_serverptr;
+	socklen_t len = sizeof(temp);
+	getsockname(q_sock, temp, &len);
+	struct sockaddr_in* temp_in = (struct sockaddr_in*)temp;
+	int queries_port = temp_in->sin_port;
+	
 	// also read the server's ip and port from the pipe
 	char* server_ip = read_from_pipe(reading, buff_size);
 	char* server_port = read_from_pipe(reading, buff_size);
@@ -96,53 +128,34 @@ int main(int argc, char* argv[]) {
 			herror("gethostbyname");
 			exit(EXIT_FAILURE);
 		}
-		// convert the port to an integer for later
-		int port = atoi(server_port);
 		// specify that we are talking about an internet domain
 		server.sin_family = AF_INET;
 		memcpy(&server.sin_addr, rem->h_addr, rem->h_length);
-		server.sin_port = htons(port);
+		int s_port = atoi(server_port);
+		server.sin_port = htons(s_port);
 		// try to connect
 		if (connect(sock, server_ptr, sizeof(server)) < 0) {
 			perror("connect");
 			exit(EXIT_FAILURE);
 		}
-		fprintf(stdout, "Connection to server initialized by worker %d", getpid());
+		fprintf(stderr, "Connection to server initialized by worker %d\n", getpid());
+		// inform the server that we are going to send worker info
+		write(sock, "w", sizeof(char));
 		// write the query port to the server
-		char* zero = "0";
-		int res = write(sock,zero, strlen(zero) + 1);
+		int res = write(sock,&queries_port, sizeof(int));
 		if (res < 0) {
 			perror("write");
 			exit(EXIT_FAILURE);
 		}
+		// write how many dirs we are going to send
+		write(sock, &(dirs->size), sizeof(int));
+		// write the dirs to inform the server
+		for (int i = 0; i < dirs->size; i++) {
+			char* nth = list_nth(dirs, i);
+			write_to_socket(sock, nth, strlen(nth));
+		}
 		// call the function to parse the whole input and send the stats to the server
 		parser(input_dir, dirs, sock, patients, diseases_hash);
-		// Now, we must open a new conection as a server, in order to answer to queries
-		struct sockaddr_in q_server, q_client;
-		struct sockaddr* q_serverptr = (struct sockaddr*)&q_server;
-		struct sockaddr* q_clientptr = (struct sockaddr*)&q_client;
-		struct hostent* q_rem;
-		int q_sock;
-		// create the socket for the queries
-		if ((q_sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-			perror("socket");
-			exit(EXIT_FAILURE);
-		}
-		// initialize our internet domain
-		q_server.sin_family = AF_INET;
-		q_server.sin_addr.s_addr = htonl(INADDR_ANY);
-		// listen to the port that we've chose
-		q_server.sin_port = htons(0);
-		// bind the socket to the address
-		if (bind(q_sock, q_serverptr, sizeof(q_server)) < 0) {
-			perror("bind");
-			exit(EXIT_FAILURE);
-		}
-		// listen for incoming connections
-		if (listen(q_sock, MAX_ALIVE_CONNECTIONS) < 0) {
-			perror("listen");
-			exit(EXIT_FAILURE);
-		}
 		// read queries until we break
 		while (true) {
 			// accept a new connection
@@ -181,7 +194,7 @@ int main(int argc, char* argv[]) {
 					while(true);
 				}
 				// call the menu to analyze the query and write the result to the socket
-				bool result = worker_menu(query, dirs, patients, diseases_hash, writing, buff_size);
+				bool result = worker_menu(query, dirs, patients, diseases_hash, writing);
 				// close the socket
 				close(new_sock);
 			}
