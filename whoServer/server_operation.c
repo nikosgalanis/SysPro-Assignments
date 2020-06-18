@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/select.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <sys/stat.h>
@@ -22,8 +23,11 @@ pthread_mutex_t printing;
 // global hash to store the distribution of the directories to the workers
 HashTable dirs_to_workers;
 
+// global list to store all the workers' ports
+List workers;
+
 // declaration of the menu function for the server
-void menu(int fd, HashTable hash, char** names1, char** names2);
+void menu(char* instruction, int fd) ;
 
 // signal global variable
 volatile sig_atomic_t sig_int_raised;
@@ -47,16 +51,18 @@ Pointer slave_thread_operate(Pointer buff) {
 		read(fd, &type, sizeof(char));
 		if (type == 'w') {
 			int port;
-			char* p = malloc(5 * sizeof(char));
 			// read the port from the worker
 			read(fd, &port, sizeof(int));
-			// int port = atoi(p);
+			int* w_port = malloc(sizeof(*w_port));
+			*w_port = port;
+			// add the port to the list
+			list_insert(workers, w_port);
 			// read the dirs from the worker
 			int n_dirs;
 			read(fd, &n_dirs, sizeof(int));
 			for (int i = 0; i < n_dirs; i++) {
 				char* country = read_from_socket(fd);
-				hash_insert(dirs_to_workers, country, &port);
+				hash_insert(dirs_to_workers, country, w_port);
 			}
 			// print all the stats provided by the worker
 			// first thing: how many files the worker reported
@@ -90,9 +96,12 @@ Pointer slave_thread_operate(Pointer buff) {
 			// critical section for printing is over
 			pthread_mutex_unlock(&printing);
 
-		} else {
+		} else if (type == 'c')	{
+			fprintf(stderr,"here\n");
 			// else, a query string is given from a client
-			
+			char* query = read_from_socket(fd);
+			menu(query, fd);
+			fprintf(stderr, "%s\n", query);
 		}
 		// close the socket fd
 		close(fd);
@@ -105,6 +114,8 @@ void server_operation(char* query_port, char* stats_port, int buffer_size, int n
 	Buffer buff = initialize_buffer(buffer_size);
 	// initialize the hash table of the directories
 	dirs_to_workers = hash_create(HASH_SIZE, hash_strings, BUCKET_SIZE, free);
+	// initialize the workers' list
+	workers = create_list(compare_ints, NULL);
 	// allocate space to store the thread ids
 	pthread_t* thread_ids = malloc(num_threads * sizeof(*thread_ids));
 	if (thread_ids == NULL) {
@@ -120,35 +131,84 @@ void server_operation(char* query_port, char* stats_port, int buffer_size, int n
 		}
 	}
 	// initialize our service. We are going to hear in 2 ports: one for stats and one for queries
-	struct sockaddr_in server, client;
-	socklen_t client_len;
-	struct sockaddr* serverptr = (struct sockaddr*) &server;
-	struct sockaddr* clientptr = (struct sockaddr*) &client;
+	struct sockaddr_in s_server, s_client;
+	socklen_t s_client_len;
+	struct sockaddr* s_serverptr = (struct sockaddr*) &s_server;
+	struct sockaddr* s_clientptr = (struct sockaddr*) &s_client;
 	struct hostent* rem;
-	int q_port = atoi(query_port);
-	int sock;
-	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+	int s_port = atoi(stats_port);
+	int s_sock;
+	if ((s_sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		perror("socket");
 		exit(EXIT_FAILURE);
 	}
-	server.sin_family = AF_INET;
-	server.sin_addr.s_addr = htonl(INADDR_ANY);
-	server.sin_port = htons(q_port);
-	if (bind(sock, serverptr, sizeof(server)) < 0) {
+	s_server.sin_family = AF_INET;
+	s_server.sin_addr.s_addr = htonl(INADDR_ANY);
+	s_server.sin_port = htons(s_port);
+	if (bind(s_sock, s_serverptr, sizeof(s_server)) < 0) {
 		perror("bind");
 		exit(EXIT_FAILURE);
 	}
-	if (listen(sock, 10) < 0) {
+	// we are going to allow up to 10 connections
+	if (listen(s_sock, 10) < 0) {
 		perror("listen");
 		exit(EXIT_FAILURE);
 	}
-	fprintf(stdout, "Server listening....\n");
-	// serve forever
+	fprintf(stdout, "Server listening for statistics....\n");
+	// initialize our service. We are going to hear in 2 ports: one for stats and one for queries
+	struct sockaddr_in q_server, q_client;
+	socklen_t q_client_len;
+	struct sockaddr* q_serverptr = (struct sockaddr*) &q_server;
+	struct sockaddr* q_clientptr = (struct sockaddr*) &q_client;
+	struct hostent* rem;
+	int q_port = atoi(query_port);
+	int q_sock;
+	if (q_sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+		perror("socket");
+		exit(EXIT_FAILURE);
+	}
+	q_server.sin_family = AF_INET;
+	q_server.sin_addr.s_addr = htonl(INADDR_ANY);
+	q_server.sin_port = htons(q_port);
+	if (bind(q_sock, q_serverptr, sizeof(q_server)) < 0) {
+		perror("bind");
+		exit(EXIT_FAILURE);
+	}
+	// we are going to allow up to 10 connections
+	if (listen(q_sock, 10) < 0) {
+		perror("listen");
+		exit(EXIT_FAILURE);
+	}
+	fprintf(stdout, "Server listening for queries....\n");	// serve forever
 	while (true) {
-		int newsock;
-		if ((newsock = accept(sock, clientptr, &client_len)) < 0) {
-			perror("accept");
+		// we are going to use select to see which socket to take info from
+		fd_set active, read;
+		// initialize the sets of the fds
+		FD_ZERO(&active);
+		// add the 2 file desc in our set
+		FD_SET(q_sock, &active);
+		FD_SET(s_sock, &active);
+		read = active;
+		if (select(FD_SETSIZE, &read, NULL, NULL, NULL) < 0) {
+			perror("select:");
 			exit(EXIT_FAILURE);
+		}
+		int newsock;
+		// queery fd is ready
+		if (FD_ISSET(q_sock, &read)) {
+			// accept the connection
+			if ((newsock = accept(q_sock, q_clientptr, &q_client_len)) < 0) {
+				perror("accept");
+				exit(EXIT_FAILURE);
+			}
+		}
+		// stats fd is ready
+		if (FD_ISSET(s_sock, &read)) {
+			// accept the connection
+			if ((newsock = accept(s_sock, s_clientptr, &s_client_len)) < 0) {
+				perror("accept");
+				exit(EXIT_FAILURE);
+			}
 		}
 		// place the new socket fd in our buffer
 		place(buff, newsock);

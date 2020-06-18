@@ -7,6 +7,11 @@ int compare_strings (Pointer a, Pointer b) {
 	return strcmp((char*) a, (char*)b);
 }
 
+// compare function for ints
+int compare_ints(Pointer a, Pointer b) {
+	return *(int*)a - *(int*)b;
+}
+
 // compare function for our entries
 int compare(Pointer first, Pointer second) {
 	TreeEntry entry1 = (TreeEntry)first;

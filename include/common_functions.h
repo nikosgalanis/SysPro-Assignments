@@ -4,6 +4,7 @@
 #include "LinkedList.h"
 
 int compare_strings (Pointer a, Pointer b);
+int compare_ints (Pointer a, Pointer b);
 int compare(Pointer first, Pointer second);
 uint hash_strings(void* key);
 int nlines(FILE* input);

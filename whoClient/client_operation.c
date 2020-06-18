@@ -42,29 +42,32 @@ Pointer thread_operate(Pointer q) {
 	}
 	// convert the port to an integer for later
 	int port = atoi(wrap->server_port);
+	fprintf(stderr, "%s %s\n", wrap->server_ip, wrap->server_port);
 	// specify that we are talking about an internet domain
 	server.sin_family = AF_INET;
 	memcpy(&server.sin_addr, rem->h_addr, rem->h_length);
 	server.sin_port = htons(port);
+	fprintf(stderr, "here\n");
 	// try to connect
 	if (connect(sock, server_ptr, sizeof(server)) < 0) {
 		perror("connect");
 		exit(EXIT_FAILURE);
 	}
-	fprintf(stdout, "Connection to server initialized by thread %ld", pthread_self());
+	fprintf(stdout, "Connection to server initialized by thread %ld\n", pthread_self());
 	// inform the server that we are sending a query
-	write(sock, "q", sizeof(char));
+	fprintf(stderr, "%s\n", wrap->query);
+	write(sock, "c", sizeof(char));
 	// write the instruction to the server
 	int res = write_to_socket(sock, wrap->query, strlen(wrap->query) + 1);
 	if (res < 0) {
 		perror("write");
 		exit(EXIT_FAILURE);
 	}
-	// read the answer from the server
-	char* answer = read_from_socket(sock);
-	// print the answer;
-	fprintf(stdout, "%s\n", answer);
-	free(answer);
+	// // read the answer from the server
+	// char* answer = read_from_socket(sock);
+	// // print the answer;
+	// fprintf(stdout, "%s\n", answer);
+	// free(answer);
 	//TODO: Close the connection
 	// operation done! unlock the mutex
 	pthread_mutex_unlock(&counter_lock);

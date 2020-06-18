@@ -155,7 +155,7 @@ int main(int argc, char* argv[]) {
 			write_to_socket(sock, nth, strlen(nth));
 		}
 		// call the function to parse the whole input and send the stats to the server
-		parser(input_dir, dirs, sock, patients, diseases_hash);
+		// parser(input_dir, dirs, sock, patients, diseases_hash);
 		// read queries until we break
 		while (true) {
 			// accept a new connection
@@ -175,24 +175,6 @@ int main(int argc, char* argv[]) {
 				goto EXIT_IF;
 			}
 			if (query != NULL) {
-				// check if an exit command is given
-				if (strstr(query, "/exit")) {
-				EXIT_IF: 	fprintf(stderr, "Child exiting\n");
-					// free the memory occupied by our data structures
-					hash_destroy(diseases_hash);
-					// free the list of the countries given
-					destroy_list(dirs);
-					// inform the parent that we've ended our job
-					write_to_pipe(writing, buff_size, "ready");
-					// close the pipes
-					close(reading); close(writing);
-					//TODO: Maybe close the server
-					// if we are here because of an interupt, just exit
-					if (sig_int_raised)
-						exit(EXIT_SUCCESS);
-					// Finally, wait forever until the parent sends a SIGKILL that will exit the worker
-					while(true);
-				}
 				// call the menu to analyze the query and write the result to the socket
 				bool result = worker_menu(query, dirs, patients, diseases_hash, writing);
 				// close the socket
