@@ -47,7 +47,6 @@ Pointer thread_operate(Pointer q) {
 	server.sin_family = AF_INET;
 	memcpy(&server.sin_addr, rem->h_addr, rem->h_length);
 	server.sin_port = htons(port);
-	fprintf(stderr, "here\n");
 	// try to connect
 	if (connect(sock, server_ptr, sizeof(server)) < 0) {
 		perror("connect");

@@ -55,8 +55,8 @@ void operation(int n_workers, int buff_size, char* input_dir, char* server_ip, c
 	}
 	// Create n_workers child processes with fork, and then exec to redirect to another executable
 	pid_t pid;
-	// arrays to store the file descs coming from the pipes for reading and writing
-	int reading[n_workers]; int writing[n_workers];
+	// array to store the file descs coming from the pipes for writing
+	int writing[n_workers];
 	// array to store the pids of the childs
 	pid_t workers_ids[n_workers];
 	mkdir("../tmp", S_IRWXU | S_IRWXG | S_IRWXO);
@@ -66,20 +66,11 @@ void operation(int n_workers, int buff_size, char* input_dir, char* server_ip, c
 		pid = fork();
 		// hold the name of the 2 named pipes
 		char* str_i = itoa(i);
-		names_1[i] = concat("../tmp/fifo_1_", str_i);
 		names_2[i] = concat("../tmp/fifo_2_", str_i);
 		free(str_i);
 		if (pid > 0) {
 			// the parent saves the child's pid
 			workers_ids[i] = pid;
-			// Create __two__ named pipes, so each process can write in one of them
-			if (mkfifo(names_1[i], 0666) == -1) {
-				if (errno != EEXIST) {
-					perror("reciever: mkfifo");
-					exit(EXIT_FAILURE);
-				}
-			}
-
 			if (mkfifo(names_2[i], 0666) == -1) {
 				if (errno != EEXIST) {
 					perror("reciever: mkfifo");
@@ -89,7 +80,7 @@ void operation(int n_workers, int buff_size, char* input_dir, char* server_ip, c
 		} else {
 			// The child does the rest
 			// call an exec function, in order to redirect the child in the worker file
-			execl("../worker/worker", "worker", names_1[i], names_2[i], itoa(buff_size), input_dir, "init", NULL);
+			execl("../worker/worker", "worker", names_2[i], itoa(buff_size), input_dir, "init", NULL);
 			// if we reach this point, then exec has returned, so sthg wrong has happened
 			perror("execl");
 			exit(EXIT_FAILURE);
@@ -98,18 +89,12 @@ void operation(int n_workers, int buff_size, char* input_dir, char* server_ip, c
 	// open the pipes and store the descriptors in the arrays that we have allocated
 	for (int i = 0; i < n_workers; i++) {
 		char* str_i = itoa(i);
-		char* name1 = concat("../tmp/fifo_1_", str_i);
 		char* name2 = concat("../tmp/fifo_2_", str_i);
 		free(str_i);
-		if ((reading[i] = open(name1, O_RDONLY, 0666)) == -1) {
-			perror("creating");
-			exit(EXIT_FAILURE);
-		}
 		if ((writing[i] = open(name2, O_WRONLY, 0666)) == -1) {
 			perror("creating");
 			exit(EXIT_FAILURE);
 		}
-		free(name1);
 		free(name2);
 	}
 	int n_dirs = 0;
@@ -212,13 +197,7 @@ void operation(int n_workers, int buff_size, char* input_dir, char* server_ip, c
 			}
 			// child has gone to another executable. Only the parent is here
 			// close the old file descriptors
-			close(reading[pos]);
 			close(writing[pos]);
-			// open the new named pipes
-			if ((reading[pos] = open(new_name1, O_RDONLY, 0666)) == -1) {
-				perror("creating");
-				exit(EXIT_FAILURE);
-			}
 			if ((writing[pos] = open(new_name2, O_WRONLY, 0666)) == -1) {
 				perror("creating");
 				exit(EXIT_FAILURE);

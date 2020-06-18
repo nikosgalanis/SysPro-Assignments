@@ -26,6 +26,9 @@ HashTable dirs_to_workers;
 // global list to store all the workers' ports
 List workers;
 
+// gloval variable for the ip that our workers are at
+char* workers_ip;
+
 // declaration of the menu function for the server
 void menu(char* instruction, int fd) ;
 
@@ -97,11 +100,11 @@ Pointer slave_thread_operate(Pointer buff) {
 			pthread_mutex_unlock(&printing);
 
 		} else if (type == 'c')	{
-			fprintf(stderr,"here\n");
 			// else, a query string is given from a client
 			char* query = read_from_socket(fd);
+			// call the menu to answer the query, and to write the result back to the client
 			menu(query, fd);
-			fprintf(stderr, "%s\n", query);
+			// fprintf(stderr, "%s\n", query);
 		}
 		// close the socket fd
 		close(fd);
@@ -135,7 +138,6 @@ void server_operation(char* query_port, char* stats_port, int buffer_size, int n
 	socklen_t s_client_len;
 	struct sockaddr* s_serverptr = (struct sockaddr*) &s_server;
 	struct sockaddr* s_clientptr = (struct sockaddr*) &s_client;
-	struct hostent* rem;
 	int s_port = atoi(stats_port);
 	int s_sock;
 	if ((s_sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -160,10 +162,9 @@ void server_operation(char* query_port, char* stats_port, int buffer_size, int n
 	socklen_t q_client_len;
 	struct sockaddr* q_serverptr = (struct sockaddr*) &q_server;
 	struct sockaddr* q_clientptr = (struct sockaddr*) &q_client;
-	struct hostent* rem;
 	int q_port = atoi(query_port);
 	int q_sock;
-	if (q_sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+	if ((q_sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		perror("socket");
 		exit(EXIT_FAILURE);
 	}
@@ -201,6 +202,7 @@ void server_operation(char* query_port, char* stats_port, int buffer_size, int n
 				perror("accept");
 				exit(EXIT_FAILURE);
 			}
+			fprintf(stderr, "here\n");
 		}
 		// stats fd is ready
 		if (FD_ISSET(s_sock, &read)) {
@@ -209,6 +211,18 @@ void server_operation(char* query_port, char* stats_port, int buffer_size, int n
 				perror("accept");
 				exit(EXIT_FAILURE);
 			}
+			// the stats connection comes from a worker, and we want to learn his ip
+			if (workers_ip == NULL) {
+				struct hostent* rem = gethostbyaddr((char*)&s_client.sin_addr.s_addr, sizeof(s_client.sin_addr.s_addr), s_client.sin_family);
+				if (rem == NULL) {
+					perror("gethostbyaddr");
+					exit(EXIT_FAILURE);
+				}
+				workers_ip = malloc((strlen(rem->h_name) + 1) * sizeof(char));
+				strcpy(workers_ip, rem->h_name);
+				// free(rem);
+			}
+
 		}
 		// place the new socket fd in our buffer
 		place(buff, newsock);

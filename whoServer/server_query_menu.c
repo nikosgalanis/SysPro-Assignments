@@ -25,7 +25,7 @@ extern char* workers_ip;
 void menu(char* instruction, int client_fd) {
 	// initialize a connection to the aprropriate worker
 	struct sockaddr_in worker;
-	struct socaddr* worker_ptr;
+	struct sockaddr* worker_ptr = (struct sockaddr*)&worker;
 	struct hostent* rem;
 	int sock = socket(AF_INET, SOCK_STREAM, 0);
 	rem = gethostbyname(workers_ip);
@@ -80,8 +80,8 @@ void menu(char* instruction, int client_fd) {
 				// write the response in the client fd
 				free(response);
 			}
-			char* result = itoa(result);
-			write_to_socket(client_fd, result, strlen(result));
+			char* final = itoa(result);
+			write_to_socket(client_fd, final, strlen(final));
 			// inform the user about the result
 			fprintf(stdout, "%d\n", result);
 		}
@@ -181,7 +181,7 @@ void menu(char* instruction, int client_fd) {
 		// else the user wants all the countries, thus we must inform all workers 
 		else {
 			char result[STRING_SIZE];
-			fprintf("Query: %s\nAnswer:\n", instruction);
+			fprintf(stdout, "Query: %s\nAnswer:\n", instruction);
 			// write into every worker's fd
 			for (int i = 0; i < list_size(workers); i++) {
 				int port = *(int*)list_nth(workers, i);

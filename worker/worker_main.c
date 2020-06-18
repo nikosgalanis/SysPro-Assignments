@@ -40,17 +40,16 @@ int main(int argc, char* argv[]) {
 
 	// Get the pipe names from the args, and open them:
 	// 1st for writing, 2nd for reading
-	int reading, writing;
-	int buff_size = atoi(argv[3]);
-	char* input_dir = concat(argv[4], "/");
-	writing = open(argv[1], O_WRONLY, 0666);
-	reading = open(argv[2], O_RDONLY, 0666);
+	int reading;
+	int buff_size = atoi(argv[2]);
+	char* input_dir = concat(argv[3], "/");
+	reading = open(argv[1], O_RDONLY, 0666);
 	// check for possible errors while opening the pipes
-	if (reading == -1 || writing == -1) {
+	if (reading == -1) {
 		perror("open");
 	}
 	// if "init is given, then during parsing we must print the stats"
-	bool print_stats = (strcmp(argv[5], "init") == 0);
+	bool print_stats = (strcmp(argv[4], "init") == 0);
 	// Variables to stroe statistics for records.
 	int success = 0; int failed = 0;
 	// Create a hash table to store all the different diseases
@@ -155,7 +154,10 @@ int main(int argc, char* argv[]) {
 			write_to_socket(sock, nth, strlen(nth));
 		}
 		// call the function to parse the whole input and send the stats to the server
-		// parser(input_dir, dirs, sock, patients, diseases_hash);
+		parser(input_dir, dirs, sock, patients, diseases_hash);
+		// we are ready to answer to queries!
+		fprintf(stderr, "\n");
+		fprintf(stderr, "Worker %d ready to answer queries!\n", getpid());
 		// read queries until we break
 		while (true) {
 			// accept a new connection
@@ -171,12 +173,17 @@ int main(int argc, char* argv[]) {
 			// check for a possible signal
 			// If a sigint or sigquit are caught
 			if (sig_int_raised) {
-				// Just goto the exiting procedure
-				goto EXIT_IF;
+				// free out data structures
+				hash_destroy(diseases_hash);
+				destroy_list(dirs);
+				// close the fd
+				close(reading);
+				// exit
+				exit(EXIT_SUCCESS);
 			}
 			if (query != NULL) {
 				// call the menu to analyze the query and write the result to the socket
-				bool result = worker_menu(query, dirs, patients, diseases_hash, writing);
+				bool result = worker_menu(query, dirs, patients, diseases_hash, new_sock);
 				// close the socket
 				close(new_sock);
 			}

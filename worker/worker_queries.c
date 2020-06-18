@@ -176,12 +176,12 @@ void topk_age_ranges(int k, char* country, char* disease, char* day1, char* day2
 	
 	int k_ret = (k < 4) ? k : 4;
 	char* result = itoa(k_ret);
-	write(writing, result, strlen(result));
+	write_to_socket(writing, result, strlen(result));
 	char* ret = malloc(13 * sizeof(*ret));
 	for (int i = 0; i <k_ret; i++) {
 		HeapEntry ent = pop(heap);
 		snprintf(ret, 13,"%5s: %3d%%\n", ent->key, 100 * ent->priority / total); 
-        write(writing, ret, strlen(ret));
+        write_to_socket(writing, ret, strlen(ret));
 		free(ent);
 	}
 	free(ret);
