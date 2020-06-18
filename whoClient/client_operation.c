@@ -62,12 +62,13 @@ Pointer thread_operate(Pointer q) {
 		perror("write");
 		exit(EXIT_FAILURE);
 	}
-	// // read the answer from the server
-	// char* answer = read_from_socket(sock);
-	// // print the answer;
-	// fprintf(stdout, "%s\n", answer);
-	// free(answer);
-	//TODO: Close the connection
+	// read the answer from the server
+	char* answer = read_from_socket(sock);
+	// print the answer;
+	fprintf(stdout, "%s\n", answer);
+	free(answer);
+	//Close the connection
+	close(sock);
 	// operation done! unlock the mutex
 	pthread_mutex_unlock(&counter_lock);
 	// the thread can now exit
@@ -82,12 +83,14 @@ void client_operation(int n_threads, char* query_file, char* server_ip, char* se
 	int n_loops = lines / n_threads;
 	// and how many threads we will create in the last loop
 	int remainder = lines % n_threads;
+	// if there are less lines than threads, then there is no point in creating nthreads
+	int active_threads = (n_threads >= lines) ? n_threads : lines;
 	// do n_loops full loops by creating all the threads
 	for (int i = 0; i < n_loops + 1; i++) {
 		int curr_threads;
 		// if we are in the first n-1 loops, we want the maximum looops
 		if (i < n_loops) {
-			curr_threads = n_threads;
+			curr_threads = active_threads;
 		}
 		// else, only the remaining ones
 		else {

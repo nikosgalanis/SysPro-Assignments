@@ -20,17 +20,23 @@
 
 extern HashTable dirs_to_workers;
 extern List workers;
-extern char* workers_ip;
+extern struct sockaddr_in workers_ip;
 
 void menu(char* instruction, int client_fd) {
+	fprintf(stderr, "reached menu\n");
 	// initialize a connection to the aprropriate worker
 	struct sockaddr_in worker;
 	struct sockaddr* worker_ptr = (struct sockaddr*)&worker;
 	struct hostent* rem;
 	int sock = socket(AF_INET, SOCK_STREAM, 0);
-	rem = gethostbyname(workers_ip);
+	if (sock < 0) {
+		perror("socket");
+		exit(EXIT_FAILURE);
+	}
+	// rem = workers_ip.sin_addr.s_addr;
+	worker.sin_addr.s_addr = workers_ip.sin_addr.s_addr;
 	worker.sin_family = AF_INET;
-	memcpy(&worker.sin_addr, rem->h_addr, rem->h_length);
+	// memcpy(&worker.sin_addr, rem->h_addr, rem->h_length);
 	if(strstr(instruction, "/diseaseFrequency")) {
 		//if one country is provided
 		bool single_country = (n_words(instruction) == 5);
@@ -41,8 +47,11 @@ void menu(char* instruction, int client_fd) {
 			if (ent) {
 				// get the port of the worker
 				int port = *(int*)ent->item;
-				worker.sin_port = htons(port);
-				connect(sock, worker_ptr, sizeof(worker));
+				worker.sin_port = port;
+				if (connect(sock, worker_ptr, sizeof(worker)) < 0) {
+					perror("connect");
+					exit(EXIT_FAILURE);
+				}
 				// inform __only__ this worker for the query
 				write_to_socket(sock, instruction, strlen(instruction));
 				// get his response and print it
@@ -154,6 +163,7 @@ void menu(char* instruction, int client_fd) {
 		bool single_country = (n_words(instruction) == 5);
 		if (single_country) {
 			char* country = nth_word(instruction, 5);
+			fprintf(stderr, "%s\n", country);
 			// search for the worker that has taken this country
 			HashEntry ent = hash_search(dirs_to_workers, country);
 			if (ent) {

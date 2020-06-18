@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
 	getsockname(q_sock, temp, &len);
 	struct sockaddr_in* temp_in = (struct sockaddr_in*)temp;
 	int queries_port = temp_in->sin_port;
-	
+	fprintf(stderr, "qpoer %d\n", queries_port);
 	// also read the server's ip and port from the pipe
 	char* server_ip = read_from_pipe(reading, buff_size);
 	char* server_port = read_from_pipe(reading, buff_size);
@@ -167,9 +167,8 @@ int main(int argc, char* argv[]) {
 				perror("accept");
 				exit(EXIT_FAILURE);
 			}
-			char query[100];
 			// read the query form the socket
-			read(new_sock, query, 100);
+			char* query = read_from_socket(new_sock);
 			// check for a possible signal
 			// If a sigint or sigquit are caught
 			if (sig_int_raised) {
@@ -191,5 +190,16 @@ int main(int argc, char* argv[]) {
 	} else {
 		// if no countries are assigned, just wait until the parent sends a SIGKILL
 		while(true);
+		// check for a possible signal
+		// If a sigint or sigquit are caught
+		if (sig_int_raised) {
+				// free out data structures
+				hash_destroy(diseases_hash);
+				destroy_list(dirs);
+				// close the fd
+				close(reading);
+				// exit
+				exit(EXIT_SUCCESS);
+		}
 	}
 }

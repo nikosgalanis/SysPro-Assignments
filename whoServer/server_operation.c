@@ -27,14 +27,13 @@ HashTable dirs_to_workers;
 List workers;
 
 // gloval variable for the ip that our workers are at
-char* workers_ip;
+struct sockaddr_in workers_ip;
 
 // declaration of the menu function for the server
-void menu(char* instruction, int fd) ;
+void menu(char* instruction, int fd);
 
 // signal global variable
 volatile sig_atomic_t sig_int_raised;
-
 // sigint handler
 void catch_int(int signo) {
     sig_int_raised = signo;
@@ -103,8 +102,8 @@ Pointer slave_thread_operate(Pointer buff) {
 			// else, a query string is given from a client
 			char* query = read_from_socket(fd);
 			// call the menu to answer the query, and to write the result back to the client
+			fprintf(stderr, "%s\n", query);
 			menu(query, fd);
-			// fprintf(stderr, "%s\n", query);
 		}
 		// close the socket fd
 		close(fd);
@@ -135,7 +134,7 @@ void server_operation(char* query_port, char* stats_port, int buffer_size, int n
 	}
 	// initialize our service. We are going to hear in 2 ports: one for stats and one for queries
 	struct sockaddr_in s_server, s_client;
-	socklen_t s_client_len;
+	socklen_t s_client_len = sizeof(struct sockaddr_in);
 	struct sockaddr* s_serverptr = (struct sockaddr*) &s_server;
 	struct sockaddr* s_clientptr = (struct sockaddr*) &s_client;
 	int s_port = atoi(stats_port);
@@ -152,14 +151,14 @@ void server_operation(char* query_port, char* stats_port, int buffer_size, int n
 		exit(EXIT_FAILURE);
 	}
 	// we are going to allow up to 10 connections
-	if (listen(s_sock, 10) < 0) {
+	if (listen(s_sock, 100) < 0) {
 		perror("listen");
 		exit(EXIT_FAILURE);
 	}
 	fprintf(stdout, "Server listening for statistics....\n");
 	// initialize our service. We are going to hear in 2 ports: one for stats and one for queries
 	struct sockaddr_in q_server, q_client;
-	socklen_t q_client_len;
+	socklen_t q_client_len = sizeof(struct sockaddr_in);
 	struct sockaddr* q_serverptr = (struct sockaddr*) &q_server;
 	struct sockaddr* q_clientptr = (struct sockaddr*) &q_client;
 	int q_port = atoi(query_port);
@@ -176,19 +175,20 @@ void server_operation(char* query_port, char* stats_port, int buffer_size, int n
 		exit(EXIT_FAILURE);
 	}
 	// we are going to allow up to 10 connections
-	if (listen(q_sock, 10) < 0) {
+	if (listen(q_sock, 100) < 0) {
 		perror("listen");
 		exit(EXIT_FAILURE);
 	}
-	fprintf(stdout, "Server listening for queries....\n");	// serve forever
+	fprintf(stdout, "Server listening for queries....\n");	
+	// serve forever
+	// we are going to use select to see which socket to take info from
+	fd_set active, read;
+	// initialize the sets of the fds
+	FD_ZERO(&active);
+	// add the 2 file desc in our set
+	FD_SET(q_sock, &active);
+	FD_SET(s_sock, &active);
 	while (true) {
-		// we are going to use select to see which socket to take info from
-		fd_set active, read;
-		// initialize the sets of the fds
-		FD_ZERO(&active);
-		// add the 2 file desc in our set
-		FD_SET(q_sock, &active);
-		FD_SET(s_sock, &active);
 		read = active;
 		if (select(FD_SETSIZE, &read, NULL, NULL, NULL) < 0) {
 			perror("select:");
@@ -199,10 +199,9 @@ void server_operation(char* query_port, char* stats_port, int buffer_size, int n
 		if (FD_ISSET(q_sock, &read)) {
 			// accept the connection
 			if ((newsock = accept(q_sock, q_clientptr, &q_client_len)) < 0) {
-				perror("accept");
+				perror("acceptquery");
 				exit(EXIT_FAILURE);
 			}
-			fprintf(stderr, "here\n");
 		}
 		// stats fd is ready
 		if (FD_ISSET(s_sock, &read)) {
@@ -212,17 +211,8 @@ void server_operation(char* query_port, char* stats_port, int buffer_size, int n
 				exit(EXIT_FAILURE);
 			}
 			// the stats connection comes from a worker, and we want to learn his ip
-			if (workers_ip == NULL) {
-				struct hostent* rem = gethostbyaddr((char*)&s_client.sin_addr.s_addr, sizeof(s_client.sin_addr.s_addr), s_client.sin_family);
-				if (rem == NULL) {
-					perror("gethostbyaddr");
-					exit(EXIT_FAILURE);
-				}
-				workers_ip = malloc((strlen(rem->h_name) + 1) * sizeof(char));
-				strcpy(workers_ip, rem->h_name);
-				// free(rem);
-			}
-
+			int len = sizeof(workers_ip);
+			getpeername(newsock, (struct sockaddr *) &workers_ip, &len);
 		}
 		// place the new socket fd in our buffer
 		place(buff, newsock);

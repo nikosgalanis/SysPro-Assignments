@@ -167,21 +167,11 @@ void operation(int n_workers, int buff_size, char* input_dir, char* server_ip, c
 			pid_t new_pid = fork();
 			// new names for new pipes
 			char* str_i = itoa(pos);
-			char* new_name1 = concat("./tmp/fifo_new_1_", str_i);
-			char* new_name2 = concat("./tmp/fifo_new_2_", str_i);
-			names_1[pos] = new_name1;
+			char* new_name2 = concat("../tmp/fifo_new_2_", str_i);
 			names_2[pos] = new_name2;
 			free(str_i);
 			if (new_pid > 0) {
 				// we are in the parent
-				// Create __two__ new named pipes, so the process can write in one of them
-				if (mkfifo(new_name1, 0666) == -1) {
-					if (errno != EEXIST) {
-						perror("reciever: mkfifo");
-						exit(EXIT_FAILURE);
-					}
-				}
-
 				if (mkfifo(new_name2, 0666) == -1) {
 					if (errno != EEXIST) {
 						perror("reciever: mkfifo");
@@ -190,7 +180,7 @@ void operation(int n_workers, int buff_size, char* input_dir, char* server_ip, c
 				}
 			} else {
 				// we are in the child, so call exec to go to the worker's code
-				execl("./worker/worker", "worker", new_name1, new_name2, itoa(buff_size), input_dir, "new", NULL);
+				execl("../worker/worker", "worker", new_name2, itoa(buff_size), input_dir, "new", NULL);
 				// if we reach this point, then exec has returned, so sthg wrong has happened
 				perror("execl");
 				exit(EXIT_FAILURE);
@@ -219,10 +209,7 @@ void operation(int n_workers, int buff_size, char* input_dir, char* server_ip, c
 			}
 			// Delete all the pipes that we've opened
 			for (int i = 0; i < n_workers; i++) {
-				unlink(names_1[i]);
 				unlink(names_2[i]);
-			
-				free(names_1[i]);
 				free(names_2[i]);
 			}
 			// free stuff

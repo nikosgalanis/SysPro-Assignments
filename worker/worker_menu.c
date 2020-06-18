@@ -1,13 +1,14 @@
 #include "common_types.h"
 #include "WorkerMenu.h"
 #include "common_functions.h"
-
+#include "Queries.h"
 bool worker_menu(char* qu, List dirs, HashTable patients, HashTable diseases_hash, int writing) {
 	char* query = strdup(qu);
 
 	char delim[3] = " \n";
 	if (strstr(query, "/diseaseFrequency")) {
 		if (n_words(query) < 4 || n_words(query) > 5) {
+			fprintf(stderr, "found %d\n", n_words(query));
 			fprintf(stderr, "error\n");
 			return false;
 		}
@@ -21,6 +22,7 @@ bool worker_menu(char* qu, List dirs, HashTable patients, HashTable diseases_has
 		char* arg3 = strtok(NULL, delim);
 		char* country = strtok(NULL, delim);
 		int res = 0;
+		// fprintf(stderr, "%s %s %s %s \n", virus, arg2, arg3, country);
 		// if a country is specified, then just return the number
 		if (country) {
 			res = disease_frequency(virus, arg2, arg3, country, diseases_hash);
@@ -33,6 +35,7 @@ bool worker_menu(char* qu, List dirs, HashTable patients, HashTable diseases_has
 			free(qu);
 		}
 		char* result = itoa(res);
+		fprintf(stderr, "result is %s\n", result);
 		write_to_socket(writing, result, strlen(result));
 		free(result);
 		return true;
