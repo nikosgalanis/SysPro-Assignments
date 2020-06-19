@@ -154,9 +154,10 @@ char* read_from_socket(int fd) {
 	// read the length of the message
 	read(fd, &len, sizeof(int));
 	// allocate space for our message
-	char* res = malloc(len * sizeof(*res));
+	char* res = malloc((len + 1) * sizeof(*res));
 	// read the message from the socket
 	read(fd, res, len);
+	res[len] = '\0';
 	return res;
 }
 

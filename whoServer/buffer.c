@@ -13,6 +13,7 @@ Buffer initialize_buffer(int size) {
 	new_buff->end = -1;
 	new_buff->count = 0;
 	new_buff->size = size;
+	return new_buff;
 }
 
 // place an item in a buffer

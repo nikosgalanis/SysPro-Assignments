@@ -70,7 +70,7 @@ Pointer slave_thread_operate(Pointer buff) {
 			// first thing: how many files the worker reported
 			int n_files;
 			read(fd, &n_files, sizeof(int));
-			fprintf(stderr, "%d\n", n_files);
+			fprintf(stderr, "nfiles %d\n", n_files);
 			// lock the printing semaphore, so we do not have many threads printing in the stdout
 			pthread_mutex_lock(&printing);
 			for (int j = 0; j < n_files; j++) {
@@ -79,18 +79,18 @@ Pointer slave_thread_operate(Pointer buff) {
 				char* country = read_from_socket(fd);
 				int n_diseases;
 				read(fd, &n_diseases, sizeof(int));
-				fprintf(stdout, "%s\n%s\n", name, country);
+				// fprintf(stderr, "%s\n%s\n", name, country);
 				// for each disease
 				for (int k = 0; k < n_diseases; k++) {
 					// parse the stats
 					char* disease = read_from_socket(fd);
-					fprintf(stdout, "%s\n", disease);
+					// fprintf(stderr, "%s\n", disease);
 					free(disease);
 					char* info = read_from_socket(fd);
-					fprintf(stdout, "%s\n", info);
+					// fprintf(stderr, "%s\n", info);
 					free(info);
 				}
-				fprintf(stdout, "\n");
+				// fprintf(stderr, "\n");
 				// no leaks!
 				free(name); 
 				free(country);
@@ -199,7 +199,7 @@ void server_operation(char* query_port, char* stats_port, int buffer_size, int n
 		if (FD_ISSET(q_sock, &read)) {
 			// accept the connection
 			if ((newsock = accept(q_sock, q_clientptr, &q_client_len)) < 0) {
-				perror("acceptquery");
+				perror("accept");
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -211,7 +211,7 @@ void server_operation(char* query_port, char* stats_port, int buffer_size, int n
 				exit(EXIT_FAILURE);
 			}
 			// the stats connection comes from a worker, and we want to learn his ip
-			int len = sizeof(workers_ip);
+			socklen_t len = sizeof(workers_ip);
 			getpeername(newsock, (struct sockaddr *) &workers_ip, &len);
 		}
 		// place the new socket fd in our buffer

@@ -23,7 +23,6 @@ extern List workers;
 extern struct sockaddr_in workers_ip;
 
 void menu(char* instruction, int client_fd) {
-	fprintf(stderr, "reached menu\n");
 	// initialize a connection to the aprropriate worker
 	struct sockaddr_in worker;
 	struct sockaddr* worker_ptr = (struct sockaddr*)&worker;
@@ -75,7 +74,7 @@ void menu(char* instruction, int client_fd) {
 			// write into every worker's fd
 			for (int i = 0; i < list_size(workers); i++) {
 				int port = *(int*)list_nth(workers, i);
-				worker.sin_port = htons(port);
+				worker.sin_port = (port);
 				connect(sock, worker_ptr, sizeof(worker));
 				// inform __only__ this worker for the query
 				write_to_socket(sock, instruction, strlen(instruction));
@@ -103,7 +102,7 @@ void menu(char* instruction, int client_fd) {
 		if (ent) {
 			// get the port of the worker
 			int port = *(int*)ent->item;
-			worker.sin_port = htons(port);
+			worker.sin_port = (port);
 			connect(sock, worker_ptr, sizeof(worker));
 			// inform __only__ this worker for the query
 			write_to_socket(sock, instruction, strlen(instruction));
@@ -134,7 +133,7 @@ void menu(char* instruction, int client_fd) {
 		bool found = false;
 		for (int i = 0; i < list_size(workers); i++) {
 			int port = *(int*)list_nth(workers, i);
-			worker.sin_port = htons(port);
+			worker.sin_port = (port);
 			connect(sock, worker_ptr, sizeof(worker));
 			// inform __only__ this worker for the query
 			write_to_socket(sock, instruction, strlen(instruction));
@@ -169,7 +168,7 @@ void menu(char* instruction, int client_fd) {
 			if (ent) {
 				// get the port of the worker
 				int port = *(int*)ent->item;
-				worker.sin_port = htons(port);
+				worker.sin_port = (port);
 				connect(sock, worker_ptr, sizeof(worker));
 				// inform __only__ this worker for the query
 				write_to_socket(sock, instruction, strlen(instruction));
@@ -195,7 +194,7 @@ void menu(char* instruction, int client_fd) {
 			// write into every worker's fd
 			for (int i = 0; i < list_size(workers); i++) {
 				int port = *(int*)list_nth(workers, i);
-				worker.sin_port = htons(port);
+				worker.sin_port = (port);
 				connect(sock, worker_ptr, sizeof(worker));
 				// inform __only__ this worker for the query
 				write_to_socket(sock, instruction, strlen(instruction));

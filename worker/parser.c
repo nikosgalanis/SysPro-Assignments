@@ -41,9 +41,11 @@ void print_todays_stats(Pointer ent, Pointer dummy, Pointer f_desc, Pointer dumm
 void parser(char* input_dir, List dirs, int writing, HashTable patients, HashTable diseases_hash) {
     // inform the server how many stat strings he will read
     int n_files = n_files_in_worker(input_dir, dirs);
+    fprintf(stderr, "nfiles %d\n", n_files);
     write(writing, &n_files, sizeof(int));
+    int total = 0;
     // for every directory/country that the worker must parse
-    for (int i = 0; i < dirs->size; i++) {
+    for (int i = 0; i < dirs->size && total <= n_files; i++) {
         // find the dir name
         char* temp_dir = concat(input_dir, list_nth(dirs, i));
         char* directory = concat(temp_dir, "/");
@@ -55,7 +57,7 @@ void parser(char* input_dir, List dirs, int writing, HashTable patients, HashTab
         }
         struct dirent* file_to_scan;
         // Traverse all the files in the directory 
-        while ((file_to_scan = readdir(dir)) != NULL) {
+        while ((file_to_scan = readdir(dir)) != NULL && total <= n_files) {
             // Ignore the . and .. dirs
             if (!strcmp(file_to_scan->d_name, ".") || !strcmp(file_to_scan->d_name, ".."))
                 continue;
@@ -145,4 +147,5 @@ void parser(char* input_dir, List dirs, int writing, HashTable patients, HashTab
         }
         closedir(dir);
     }
+    // close(writing);
 }
