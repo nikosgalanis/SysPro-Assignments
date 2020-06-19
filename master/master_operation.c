@@ -15,10 +15,16 @@
 #include "stats.h"
 
 volatile sig_atomic_t sig_int_raised;
+volatile sig_atomic_t sig_usr_raised;
 
 // sigint handler
 void catch_int(int signo) {
     sig_int_raised = signo;
+}
+
+// sigusr handler
+void catch_usr(int signo) {
+    sig_usr_raised = signo;
 }
 
 void renew_lists(Pointer ent, Pointer write_fd, Pointer old, Pointer dummy, Pointer new) {
@@ -42,7 +48,14 @@ void operation(int n_workers, int buff_size, char* input_dir, char* server_ip, c
     sigfillset(&(act_int.sa_mask));
 	// want to handle SIGINT and SIGQUIT with this function
     sigaction(SIGINT, &act_int, NULL);
-	sigaction(SIGQUIT, &act_int, NULL);
+    sigaction(SIGQUIT, &act_int, NULL);
+	// we must also handle a SIGUSR1
+	static struct sigaction act_usr;
+	// handle our signals with our function, in order to catch them
+    act_usr.sa_handler = catch_usr;
+    sigfillset(&(act_usr.sa_mask));
+	// want to handle SIGINT and SIGQUIT with this function
+    sigaction(SIGUSR1, &act_usr, NULL);
 
 	// hold a pointer for the subdirs that we are going to check
 	struct dirent* sub_dir;
@@ -156,6 +169,15 @@ void operation(int n_workers, int buff_size, char* input_dir, char* server_ip, c
 
 	// stay alive and check for possibly dead children
 	while (true) {
+		// a usr is raised if a fatal error has occured in one of the workers
+		if (sig_usr_raised) {
+			fprintf(stderr, "usr1 recieved\n");
+			// we must kill all the workers
+			for (int i = 0; i < n_workers; i++) {
+				kill(workers_ids[i], SIGKILL);
+			}
+			exit(EXIT_FAILURE);
+		}
 		pid_t dead_child;
 		// run a loop for all the childs(-1), to see if they have died. 
 		// A dead child's pid is returned to dead_child var, so we know what we must do from here

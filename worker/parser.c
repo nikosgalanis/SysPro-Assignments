@@ -41,7 +41,6 @@ void print_todays_stats(Pointer ent, Pointer dummy, Pointer f_desc, Pointer dumm
 void parser(char* input_dir, List dirs, int writing, HashTable patients, HashTable diseases_hash) {
     // inform the server how many stat strings he will read
     int n_files = n_files_in_worker(input_dir, dirs);
-    fprintf(stderr, "nfiles %d\n", n_files);
     write(writing, &n_files, sizeof(int));
     int total = 0;
     // for every directory/country that the worker must parse

@@ -42,7 +42,6 @@ Pointer thread_operate(Pointer q) {
 	}
 	// convert the port to an integer for later
 	int port = atoi(wrap->server_port);
-	fprintf(stderr, "%s %s\n", wrap->server_ip, wrap->server_port);
 	// specify that we are talking about an internet domain
 	server.sin_family = AF_INET;
 	memcpy(&server.sin_addr, rem->h_addr, rem->h_length);
@@ -53,8 +52,7 @@ Pointer thread_operate(Pointer q) {
 		exit(EXIT_FAILURE);
 	}
 	fprintf(stdout, "Connection to server initialized by thread %ld\n", pthread_self());
-	// inform the server that we are sending a query
-	fprintf(stderr, "%s\n", wrap->query);
+	// inform the server that we are a client
 	write(sock, "c", sizeof(char));
 	// write the instruction to the server
 	int res = write_to_socket(sock, wrap->query, strlen(wrap->query) + 1);
@@ -65,13 +63,13 @@ Pointer thread_operate(Pointer q) {
 	// read the answer from the server
 	char* answer = read_from_socket(sock);
 	// print the answer;
-	fprintf(stdout, "%s\n", answer);
+	fprintf(stdout, "\n\nQuery: %s\nAnswer:\n%s\n---------------------\n", wrap->query, answer);
 	free(answer);
 	//Close the connection
 	close(sock);
 	// operation done! unlock the mutex
 	pthread_mutex_unlock(&counter_lock);
-	// the thread can now exit
+	// the thread can now exit. Return the wrap so it xan be freed
 	pthread_exit(wrap);
 }
 
@@ -84,7 +82,7 @@ void client_operation(int n_threads, char* query_file, char* server_ip, char* se
 	// and how many threads we will create in the last loop
 	int remainder = lines % n_threads;
 	// if there are less lines than threads, then there is no point in creating nthreads
-	int active_threads = (n_threads >= lines) ? n_threads : lines;
+	int active_threads = (n_threads >= lines) ? lines : n_threads;
 	// do n_loops full loops by creating all the threads
 	for (int i = 0; i < n_loops + 1; i++) {
 		int curr_threads;
@@ -136,19 +134,21 @@ void client_operation(int n_threads, char* query_file, char* server_ip, char* se
 		// wait for each thread to finish its execution
 		for (int j = 0; j < curr_threads; j++) {
 			Pointer w;
+			// join all the created threads
 			int res = pthread_join(thread_ids[j], &w);
-			info wrap = (info)w;
-			free(wrap->query);
-			free(wrap);
 			if (res) {
 				perror2("pthread_join", res);
 				exit(EXIT_FAILURE);
 			}
+			// free the returned wrap
+			info wrap = (info)w;
+			free(wrap->query);
+			free(wrap);
 		}
 		pthread_barrier_destroy(&barrier);
 		free(thread_ids);
 	}
+	// close the queries file, we do not need it anymore
 	fclose(queries);
 	// everything is perfect! return to wrap it up!
-	return;
 }

@@ -116,7 +116,7 @@ char* search_patient_record(char* r_id, HashTable patients) {
 	return patient;
 }
 
-char* num_patient_admissions(char* disease, char* arg2, char* arg3, char* country, HashTable diseases_hash) {
+int num_patient_admissions(char* disease, char* arg2, char* arg3, char* country, HashTable diseases_hash) {
 	// Convert the input strings to dates
 	char* a2 = strdup(arg2);
 	char* a3 = strdup(arg3);
@@ -126,18 +126,13 @@ char* num_patient_admissions(char* disease, char* arg2, char* arg3, char* countr
 	BalancedTree disease_tree = hash_search(diseases_hash, disease)->item;
 	// If there is no such entry in the disease ht, then we do not have any patients here
 	if (disease_tree == NULL) {
-		return NULL;
+		return FAILED;
 	}
 	// all the ones that are after date 2, except those that are after date 1
-	int res = balanced_tree_cond_traverse(disease_tree, check_bigger_entry_date, &d1, country, NULL) - balanced_tree_cond_traverse(disease_tree, check_bigger_entry_date, &d2, country, NULL);
-
-	int len = strlen(country) + strlen(itoa(res)) + 3;
-	char* to_return = malloc(len * sizeof(*to_return));
-	sprintf(to_return, "%15s %d\n", country, res);
-	return to_return;
+	return balanced_tree_cond_traverse(disease_tree, check_bigger_entry_date, &d1, country, NULL) - balanced_tree_cond_traverse(disease_tree, check_bigger_entry_date, &d2, country, NULL);
 }
 
-char* num_patient_discharges(char* disease, char* arg2, char* arg3, char* country, HashTable diseases_hash) {
+int num_patient_discharges(char* disease, char* arg2, char* arg3, char* country, HashTable diseases_hash) {
 	// Convert the input strings to dates
 	char* a2 = strdup(arg2);
 	char* a3 = strdup(arg3);
@@ -147,14 +142,10 @@ char* num_patient_discharges(char* disease, char* arg2, char* arg3, char* countr
 	BalancedTree disease_tree = hash_search(diseases_hash, disease)->item;
 	// If there is no such entry in the disease ht, then we do not have any patients here
 	if (disease_tree == NULL) {
-		return NULL;
+		return FAILED;
 	}
 	// all the ones that are after date 2, except those that are after date 1
-	int res = balanced_tree_cond_traverse(disease_tree, check_bigger_exit_date, &d1, country, NULL) - balanced_tree_cond_traverse(disease_tree, check_bigger_exit_date, &d2, country, NULL);
-	int len = strlen(country) + strlen(itoa(res)) + 3;
-	char* to_return = malloc(len * sizeof(*to_return));
-	sprintf(to_return, "%15s %d\n", country, res);
-	return to_return;
+	return balanced_tree_cond_traverse(disease_tree, check_bigger_exit_date, &d1, country, NULL) - balanced_tree_cond_traverse(disease_tree, check_bigger_exit_date, &d2, country, NULL);
 }
 
 void topk_age_ranges(int k, char* country, char* disease, char* day1, char* day2, HashTable diseases_hash, int writing) {

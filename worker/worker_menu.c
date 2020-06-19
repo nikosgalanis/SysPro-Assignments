@@ -8,8 +8,8 @@ bool worker_menu(char* qu, List dirs, HashTable patients, HashTable diseases_has
 	char delim[3] = " \n";
 	if (strstr(query, "/diseaseFrequency")) {
 		if (n_words(query) < 4 || n_words(query) > 5) {
-			fprintf(stderr, "found %d\n", n_words(query));
 			fprintf(stderr, "error\n");
+			write_to_socket(writing, "-", strlen("-"));
 			return false;
 		}
 		char* q = strtok(query, delim);
@@ -35,7 +35,6 @@ bool worker_menu(char* qu, List dirs, HashTable patients, HashTable diseases_has
 			free(qu);
 		}
 		char* result = itoa(res);
-		fprintf(stderr, "result is %s\n", result);
 		write_to_socket(writing, result, strlen(result));
 		free(result);
 		return true;
@@ -97,25 +96,25 @@ bool worker_menu(char* qu, List dirs, HashTable patients, HashTable diseases_has
 		// If the query is specified for 1 country
 		if (country) {
 			// just write it to the pipe
-			char* result = num_patient_admissions(virus, arg2, arg3, country, diseases_hash);
+			int sum = num_patient_admissions(virus, arg2, arg3, country, diseases_hash);
+			char* result = itoa(sum);
 			write_to_socket(writing, result, strlen(result));
 			free(result);
 			return true;
 		}
 		else {
-			// if we wna to send many responses, inform the parent how many of them we're gonna store
-			char* n = itoa(dirs->size);
-			write_to_socket(writing, n, strlen(n));
-			// for each one of them
+			int result = 0;
+			// for each one of the countries
 			for (int i = 0; i < dirs->size; i++) {
 				// call the query function with a specific country
 				char* curr_country = list_nth(dirs, i);
-				char* result = num_patient_admissions(virus, arg2, arg3, curr_country, diseases_hash);
-				write_to_socket(writing, result, strlen(result));
-				free(result);
+				// increase the sum by the amount of patients in each call
+				result += num_patient_admissions(virus, arg2, arg3, curr_country, diseases_hash);
 			}
+			char* final = itoa(result);
+			write_to_socket(writing, final, strlen(final));
+			free(final);
 			free(qu);
-			free(n);
 			return true;
 		}
 	} 
@@ -137,25 +136,25 @@ bool worker_menu(char* qu, List dirs, HashTable patients, HashTable diseases_has
 		// If the query is specified for 1 country
 		if (country) {
 			// just write it to the pipe
-			char* result = num_patient_discharges(virus, arg2, arg3, country, diseases_hash);
+			int sum = num_patient_admissions(virus, arg2, arg3, country, diseases_hash);
+			char* result = itoa(sum);
 			write_to_socket(writing, result, strlen(result));
 			free(result);
 			return true;
 		}
 		else {
-			// if we wna to send many responses, inform the parent how many of them we're gonna store
-			char* n = itoa(dirs->size);
-			write_to_socket(writing, n, strlen(n));
-			// for each one of them
+			int result = 0;
+			// for each one of the countries
 			for (int i = 0; i < dirs->size; i++) {
 				// call the query function with a specific country
 				char* curr_country = list_nth(dirs, i);
-				char* result = num_patient_discharges(virus, arg2, arg3, curr_country, diseases_hash);
-        		write_to_socket(writing, result, strlen(result));
-				free(result);
+				// increase the sum by the amount of patients in each call
+				result += num_patient_admissions(virus, arg2, arg3, curr_country, diseases_hash);
 			}
+			char* final = itoa(result);
+			write_to_socket(writing, final, strlen(final));
+			free(final);
 			free(qu);
-			free(n);
 			return true;
 		}
 	} else {

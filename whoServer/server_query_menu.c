@@ -63,8 +63,9 @@ void menu(char* instruction, int client_fd) {
 				free(response);
 			}
 			else {
-				write_to_socket(client_fd, "-", strlen("-"));
+				// An error has occured. Inform the cleint and the user of the server
 				fprintf(stderr, "Country provided not listed in input dir\n");
+				write_to_socket(client_fd, "-", strlen("-"));
 				return;
 			}
 		}
@@ -75,7 +76,11 @@ void menu(char* instruction, int client_fd) {
 			for (int i = 0; i < list_size(workers); i++) {
 				int port = *(int*)list_nth(workers, i);
 				worker.sin_port = (port);
-				connect(sock, worker_ptr, sizeof(worker));
+				sock = socket(AF_INET, SOCK_STREAM, 0);
+				if (connect(sock, worker_ptr, sizeof(worker)) < 0) {
+					perror("connect");
+					exit(EXIT_FAILURE);
+				}
 				// inform __only__ this worker for the query
 				write_to_socket(sock, instruction, strlen(instruction));
 				// get his response and print it
@@ -103,12 +108,15 @@ void menu(char* instruction, int client_fd) {
 			// get the port of the worker
 			int port = *(int*)ent->item;
 			worker.sin_port = (port);
-			connect(sock, worker_ptr, sizeof(worker));
+			if (connect(sock, worker_ptr, sizeof(worker)) < 0) {
+				perror("connect");
+				exit(EXIT_FAILURE);
+			}
 			// inform __only__ this worker for the query
 			write_to_socket(sock, instruction, strlen(instruction));
 			// find how many times we will read from the pipe
 			int k = atoi(read_from_socket(sock));
-			char result[100];
+			char* result = malloc(100 * sizeof(char));
 			fprintf(stdout, "Query: %s\nAnswer:\n", instruction);
 			// get his response and print it
 			for (int i = 0; i < k; i++) {
@@ -119,6 +127,7 @@ void menu(char* instruction, int client_fd) {
 				free(response);
 			}
 			// wirte the result to the client's fd
+			fprintf(stderr, "strlen %ld\n", strlen(result));
 			write_to_socket(client_fd, result, strlen(result));
 			close(sock);
 		}
@@ -134,18 +143,21 @@ void menu(char* instruction, int client_fd) {
 		for (int i = 0; i < list_size(workers); i++) {
 			int port = *(int*)list_nth(workers, i);
 			worker.sin_port = (port);
-			connect(sock, worker_ptr, sizeof(worker));
+			sock = socket(AF_INET, SOCK_STREAM, 0);
+			if (connect(sock, worker_ptr, sizeof(worker)) < 0) {
+				perror("connect");
+				exit(EXIT_FAILURE);
+			}
 			// inform __only__ this worker for the query
 			write_to_socket(sock, instruction, strlen(instruction));
 			// get his response and print it
 			char* response = read_from_socket(sock);
 			// if such patient is found, print the record
-			if (strcmp(response, "-")) {
+			if (strstr(response, "-") != NULL && (found == false)) {
 				fprintf(stdout, "Query: %s\nAnswer:%s\n", instruction, response);
 				// write the response in the client fd
 				write_to_socket(client_fd, response, strlen(response));
 				found = true;
-				break;
 			}
 			// if no such record exists in all of our data
 			if (!found) {
@@ -169,7 +181,10 @@ void menu(char* instruction, int client_fd) {
 				// get the port of the worker
 				int port = *(int*)ent->item;
 				worker.sin_port = (port);
-				connect(sock, worker_ptr, sizeof(worker));
+				if (connect(sock, worker_ptr, sizeof(worker)) < 0) {
+					perror("connect");
+					exit(EXIT_FAILURE);
+				}
 				// inform __only__ this worker for the query
 				write_to_socket(sock, instruction, strlen(instruction));
 				// get his response and print it
@@ -189,27 +204,32 @@ void menu(char* instruction, int client_fd) {
 		}
 		// else the user wants all the countries, thus we must inform all workers 
 		else {
-			char result[STRING_SIZE];
-			fprintf(stdout, "Query: %s\nAnswer:\n", instruction);
+			int result = 0;
 			// write into every worker's fd
 			for (int i = 0; i < list_size(workers); i++) {
 				int port = *(int*)list_nth(workers, i);
 				worker.sin_port = (port);
-				connect(sock, worker_ptr, sizeof(worker));
+				sock = socket(AF_INET, SOCK_STREAM, 0);
+				if (connect(sock, worker_ptr, sizeof(worker)) < 0) {
+					perror("connect");
+					exit(EXIT_FAILURE);
+				}
 				// inform __only__ this worker for the query
 				write_to_socket(sock, instruction, strlen(instruction));
 				// get his response and print it
 				char* response = read_from_socket(sock);
 				// add this to the total result
-				strcat(result, response);
+				result += atoi(response);
 				// close the connection
 				close(sock);
-				fprintf(stdout, "%d\n", atoi(response));
+				fprintf(stdout, "Query: %s\nAnswer:%d\n", instruction, atoi(response));
 				// write the response in the client fd
 				free(response);
 			}
-			// write the whole string to the client's fd
-			write_to_socket(client_fd, result, strlen(result));
+			char* final = itoa(result);
+			write_to_socket(client_fd, final, strlen(final));
+			// inform the user about the result
+			fprintf(stdout, "%d\n", result);
 		}
 	}
 	else {

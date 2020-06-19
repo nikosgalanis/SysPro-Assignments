@@ -70,27 +70,26 @@ Pointer slave_thread_operate(Pointer buff) {
 			// first thing: how many files the worker reported
 			int n_files;
 			read(fd, &n_files, sizeof(int));
-			fprintf(stderr, "nfiles %d\n", n_files);
 			// lock the printing semaphore, so we do not have many threads printing in the stdout
 			pthread_mutex_lock(&printing);
-			for (int j = 0; j < n_files; j++) {
+			for (int j = 0; j < n_files - 2; j++) {
 				// each file has a name, a country, and some diseases
 				char* name = read_from_socket(fd);
 				char* country = read_from_socket(fd);
 				int n_diseases;
 				read(fd, &n_diseases, sizeof(int));
-				// fprintf(stderr, "%s\n%s\n", name, country);
+				fprintf(stderr, "%s\n%s\n", name, country);
 				// for each disease
 				for (int k = 0; k < n_diseases; k++) {
 					// parse the stats
 					char* disease = read_from_socket(fd);
-					// fprintf(stderr, "%s\n", disease);
+					fprintf(stderr, "%s\n", disease);
 					free(disease);
 					char* info = read_from_socket(fd);
-					// fprintf(stderr, "%s\n", info);
+					fprintf(stderr, "%s\n", info);
 					free(info);
 				}
-				// fprintf(stderr, "\n");
+				fprintf(stderr, "\n");
 				// no leaks!
 				free(name); 
 				free(country);
@@ -179,8 +178,7 @@ void server_operation(char* query_port, char* stats_port, int buffer_size, int n
 		perror("listen");
 		exit(EXIT_FAILURE);
 	}
-	fprintf(stdout, "Server listening for queries....\n");	
-	// serve forever
+	fprintf(stdout, "Server listening for queries....\n");
 	// we are going to use select to see which socket to take info from
 	fd_set active, read;
 	// initialize the sets of the fds
@@ -188,8 +186,10 @@ void server_operation(char* query_port, char* stats_port, int buffer_size, int n
 	// add the 2 file desc in our set
 	FD_SET(q_sock, &active);
 	FD_SET(s_sock, &active);
+	// serve forever
 	while (true) {
 		read = active;
+		// select the file desc containing data
 		if (select(FD_SETSIZE, &read, NULL, NULL, NULL) < 0) {
 			perror("select:");
 			exit(EXIT_FAILURE);
