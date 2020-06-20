@@ -12,6 +12,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+void perror_and_sig(char* err);
+
 // visit function for the ht in order to read and print the stats in the desired output
 void print_todays_stats(Pointer ent, Pointer dummy, Pointer f_desc, Pointer dummy1, Pointer dummy2) {
 	HashEntry entry = (HashEntry)ent;
@@ -41,7 +43,9 @@ void print_todays_stats(Pointer ent, Pointer dummy, Pointer f_desc, Pointer dumm
 void parser(char* input_dir, List dirs, int writing, HashTable patients, HashTable diseases_hash) {
     // inform the server how many stat strings he will read
     int n_files = n_files_in_worker(input_dir, dirs);
-    write(writing, &n_files, sizeof(int));
+    if (write(writing, &n_files, sizeof(int)) < 0) {
+        perror_and_sig("write");
+    };
     int total = 0;
     // for every directory/country that the worker must parse
     for (int i = 0; i < dirs->size && total <= n_files; i++) {
@@ -146,5 +150,4 @@ void parser(char* input_dir, List dirs, int writing, HashTable patients, HashTab
         }
         closedir(dir);
     }
-    // close(writing);
 }

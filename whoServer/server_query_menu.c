@@ -26,13 +26,6 @@ void menu(char* instruction, int client_fd) {
 	// initialize a connection to the aprropriate worker
 	struct sockaddr_in worker;
 	struct sockaddr* worker_ptr = (struct sockaddr*)&worker;
-	struct hostent* rem;
-	int sock = socket(AF_INET, SOCK_STREAM, 0);
-	if (sock < 0) {
-		perror("socket");
-		exit(EXIT_FAILURE);
-	}
-	// rem = workers_ip.sin_addr.s_addr;
 	worker.sin_addr.s_addr = workers_ip.sin_addr.s_addr;
 	worker.sin_family = AF_INET;
 	// memcpy(&worker.sin_addr, rem->h_addr, rem->h_length);
@@ -47,6 +40,11 @@ void menu(char* instruction, int client_fd) {
 				// get the port of the worker
 				int port = *(int*)ent->item;
 				worker.sin_port = port;
+				int sock = socket(AF_INET, SOCK_STREAM, 0);
+				if (sock < 0) {
+					perror("socket");
+					exit(EXIT_FAILURE);
+				}
 				if (connect(sock, worker_ptr, sizeof(worker)) < 0) {
 					perror("connect");
 					exit(EXIT_FAILURE);
@@ -56,7 +54,7 @@ void menu(char* instruction, int client_fd) {
 				// get his response and print it
 				char* response = read_from_socket(sock);
 				// close the connection
-				close(sock);
+				close(sock); sock = -1;
 				fprintf(stdout, "Query: %s\nAnswer:%d\n", instruction, atoi(response));
 				// write the response in the client fd
 				write_to_socket(client_fd, response, strlen(response));
@@ -76,7 +74,11 @@ void menu(char* instruction, int client_fd) {
 			for (int i = 0; i < list_size(workers); i++) {
 				int port = *(int*)list_nth(workers, i);
 				worker.sin_port = (port);
-				sock = socket(AF_INET, SOCK_STREAM, 0);
+				int sock = socket(AF_INET, SOCK_STREAM, 0);
+				if (sock < 0) {
+					perror("socket");
+					exit(EXIT_FAILURE);
+				}
 				if (connect(sock, worker_ptr, sizeof(worker)) < 0) {
 					perror("connect");
 					exit(EXIT_FAILURE);
@@ -88,11 +90,11 @@ void menu(char* instruction, int client_fd) {
 				// add this to the total result
 				result += atoi(response);
 				// close the connection
-				close(sock);
-				fprintf(stdout, "Query: %s\nAnswer:%d\n", instruction, atoi(response));
+				close(sock); sock = -1;
 				// write the response in the client fd
 				free(response);
 			}
+			fprintf(stdout, "Query: %s\nAnswer:%d\n", instruction, result);
 			char* final = itoa(result);
 			write_to_socket(client_fd, final, strlen(final));
 			// inform the user about the result
@@ -108,6 +110,11 @@ void menu(char* instruction, int client_fd) {
 			// get the port of the worker
 			int port = *(int*)ent->item;
 			worker.sin_port = (port);
+			int sock = socket(AF_INET, SOCK_STREAM, 0);
+			if (sock < 0) {
+				perror("socket");
+				exit(EXIT_FAILURE);
+			}
 			if (connect(sock, worker_ptr, sizeof(worker)) < 0) {
 				perror("connect");
 				exit(EXIT_FAILURE);
@@ -127,9 +134,8 @@ void menu(char* instruction, int client_fd) {
 				free(response);
 			}
 			// wirte the result to the client's fd
-			fprintf(stderr, "strlen %ld\n", strlen(result));
 			write_to_socket(client_fd, result, strlen(result));
-			close(sock);
+			close(sock); sock = -1;
 		}
 		else {
 			write_to_socket(client_fd, "-", strlen("-"));
@@ -143,7 +149,11 @@ void menu(char* instruction, int client_fd) {
 		for (int i = 0; i < list_size(workers); i++) {
 			int port = *(int*)list_nth(workers, i);
 			worker.sin_port = (port);
-			sock = socket(AF_INET, SOCK_STREAM, 0);
+			int sock = socket(AF_INET, SOCK_STREAM, 0);
+			if (sock < 0) {
+				perror("socket");
+				exit(EXIT_FAILURE);
+			}
 			if (connect(sock, worker_ptr, sizeof(worker)) < 0) {
 				perror("connect");
 				exit(EXIT_FAILURE);
@@ -165,7 +175,7 @@ void menu(char* instruction, int client_fd) {
 				write_to_socket(client_fd, "-", strlen("-"));
 			}
 			// close the connection
-			close(sock);
+			close(sock); sock = -1;
 			free(response);
 		}
 	}
@@ -174,13 +184,17 @@ void menu(char* instruction, int client_fd) {
 		bool single_country = (n_words(instruction) == 5);
 		if (single_country) {
 			char* country = nth_word(instruction, 5);
-			fprintf(stderr, "%s\n", country);
 			// search for the worker that has taken this country
 			HashEntry ent = hash_search(dirs_to_workers, country);
 			if (ent) {
 				// get the port of the worker
 				int port = *(int*)ent->item;
 				worker.sin_port = (port);
+				int sock = socket(AF_INET, SOCK_STREAM, 0);
+				if (sock < 0) {
+					perror("socket");
+					exit(EXIT_FAILURE);
+				}
 				if (connect(sock, worker_ptr, sizeof(worker)) < 0) {
 					perror("connect");
 					exit(EXIT_FAILURE);
@@ -190,7 +204,7 @@ void menu(char* instruction, int client_fd) {
 				// get his response and print it
 				char* response = read_from_socket(sock);
 				// close the connection
-				close(sock);
+				close(sock); sock = -1;
 				fprintf(stdout, "Query: %s\nAnswer:%s\n", instruction, response);
 				// write the response in the client fd
 				write_to_socket(client_fd, response, strlen(response));
@@ -209,7 +223,11 @@ void menu(char* instruction, int client_fd) {
 			for (int i = 0; i < list_size(workers); i++) {
 				int port = *(int*)list_nth(workers, i);
 				worker.sin_port = (port);
-				sock = socket(AF_INET, SOCK_STREAM, 0);
+				int sock = socket(AF_INET, SOCK_STREAM, 0);
+				if (sock < 0) {
+					perror("socket");
+					exit(EXIT_FAILURE);
+				}
 				if (connect(sock, worker_ptr, sizeof(worker)) < 0) {
 					perror("connect");
 					exit(EXIT_FAILURE);
@@ -221,12 +239,12 @@ void menu(char* instruction, int client_fd) {
 				// add this to the total result
 				result += atoi(response);
 				// close the connection
-				close(sock);
-				fprintf(stdout, "Query: %s\nAnswer:%d\n", instruction, atoi(response));
+				close(sock); sock = -1;
 				// write the response in the client fd
 				free(response);
 			}
 			char* final = itoa(result);
+			fprintf(stdout, "Query: %s\nAnswer:%d\n", instruction, result);
 			write_to_socket(client_fd, final, strlen(final));
 			// inform the user about the result
 			fprintf(stdout, "%d\n", result);

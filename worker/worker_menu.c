@@ -22,7 +22,6 @@ bool worker_menu(char* qu, List dirs, HashTable patients, HashTable diseases_has
 		char* arg3 = strtok(NULL, delim);
 		char* country = strtok(NULL, delim);
 		int res = 0;
-		// fprintf(stderr, "%s %s %s %s \n", virus, arg2, arg3, country);
 		// if a country is specified, then just return the number
 		if (country) {
 			res = disease_frequency(virus, arg2, arg3, country, diseases_hash);

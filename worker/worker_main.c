@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
 		perror_and_sig("bind");
 	}
 	// listen for incoming connections
-	if (listen(q_sock, MAX_ALIVE_CONNECTIONS) < 0) {
+	if (listen(q_sock, SOMAXCONN) < 0) {
 		perror_and_sig("listen");
 	}
 	// learn the port that was assigned by the os
@@ -104,7 +104,7 @@ int main(int argc, char* argv[]) {
 	socklen_t len = sizeof(temp);
 	getsockname(q_sock, temp, &len);
 	struct sockaddr_in* temp_in = (struct sockaddr_in*)temp;
-	int queries_port = temp_in->sin_port;
+	int queries_port = ntohs(temp_in->sin_port);
 	// also read the server's ip and port from the pipe
 	char* server_ip = read_from_pipe(reading, buff_size);
 	char* server_port = read_from_pipe(reading, buff_size);

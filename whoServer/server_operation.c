@@ -56,7 +56,7 @@ Pointer slave_thread_operate(Pointer buff) {
 			// read the port from the worker
 			read(fd, &port, sizeof(int));
 			int* w_port = malloc(sizeof(*w_port));
-			*w_port = port;
+			*w_port = htons(port);
 			// add the port to the list
 			list_insert(workers, w_port);
 			// read the dirs from the worker
@@ -72,7 +72,7 @@ Pointer slave_thread_operate(Pointer buff) {
 			read(fd, &n_files, sizeof(int));
 			// lock the printing semaphore, so we do not have many threads printing in the stdout
 			pthread_mutex_lock(&printing);
-			for (int j = 0; j < n_files - 2; j++) {
+			for (int j = 0; j < n_files; j++) {
 				// each file has a name, a country, and some diseases
 				char* name = read_from_socket(fd);
 				char* country = read_from_socket(fd);
@@ -101,11 +101,15 @@ Pointer slave_thread_operate(Pointer buff) {
 			// else, a query string is given from a client
 			char* query = read_from_socket(fd);
 			// call the menu to answer the query, and to write the result back to the client
-			fprintf(stderr, "%s\n", query);
 			menu(query, fd);
 		}
 		// close the socket fd
 		close(fd);
+		fd = -1;
+		if (sig_int_raised) {
+			fprintf(stderr, "Exiting thread");
+			pthread_exit(NULL);
+		}
 	}
 	return NULL;
 }
@@ -150,12 +154,12 @@ void server_operation(char* query_port, char* stats_port, int buffer_size, int n
 		exit(EXIT_FAILURE);
 	}
 	// we are going to allow up to 10 connections
-	if (listen(s_sock, 100) < 0) {
+	if (listen(s_sock, SOMAXCONN) < 0) {
 		perror("listen");
 		exit(EXIT_FAILURE);
 	}
 	fprintf(stdout, "Server listening for statistics....\n");
-	// initialize our service. We are going to hear in 2 ports: one for stats and one for queries
+	// no for the queries...
 	struct sockaddr_in q_server, q_client;
 	socklen_t q_client_len = sizeof(struct sockaddr_in);
 	struct sockaddr* q_serverptr = (struct sockaddr*) &q_server;
@@ -174,7 +178,7 @@ void server_operation(char* query_port, char* stats_port, int buffer_size, int n
 		exit(EXIT_FAILURE);
 	}
 	// we are going to allow up to 10 connections
-	if (listen(q_sock, 100) < 0) {
+	if (listen(q_sock, SOMAXCONN) < 0) {
 		perror("listen");
 		exit(EXIT_FAILURE);
 	}
@@ -213,6 +217,22 @@ void server_operation(char* query_port, char* stats_port, int buffer_size, int n
 			// the stats connection comes from a worker, and we want to learn his ip
 			socklen_t len = sizeof(workers_ip);
 			getpeername(newsock, (struct sockaddr *) &workers_ip, &len);
+		}
+		// first thing: catch a possible signal
+		if (sig_int_raised) {
+			fprintf(stderr, "Exiting the server...");
+			// destroy the buffer
+			destroy_buffer(buff);
+			// join all the threads
+			for (int i = 0; i < num_threads; i++) {
+				int res = pthread_join(thread_ids[i], NULL);
+				if (res) {
+					perror2("pthread_join", res);
+					exit(EXIT_FAILURE);
+				}
+			}
+			// return to the main function to wrap it up
+			return;
 		}
 		// place the new socket fd in our buffer
 		place(buff, newsock);

@@ -73,7 +73,6 @@ void operation(int n_workers, int buff_size, char* input_dir, char* server_ip, c
 	// array to store the pids of the childs
 	pid_t workers_ids[n_workers];
 	mkdir("../tmp", S_IRWXU | S_IRWXG | S_IRWXO);
-	char* names_1[n_workers];
 	char* names_2[n_workers];
 	for (int i = 0; i < n_workers; i++) {
 		pid = fork();

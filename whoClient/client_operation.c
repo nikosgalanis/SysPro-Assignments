@@ -17,6 +17,7 @@ typedef struct init_info* info;
 
 // global barrier variable that is accessible from all of the threads
 pthread_barrier_t barrier;
+
 // use a macro to initialize our mutex
 pthread_mutex_t counter_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -67,6 +68,7 @@ Pointer thread_operate(Pointer q) {
 	free(answer);
 	//Close the connection
 	close(sock);
+	sock = -1;
 	// operation done! unlock the mutex
 	pthread_mutex_unlock(&counter_lock);
 	// the thread can now exit. Return the wrap so it xan be freed
