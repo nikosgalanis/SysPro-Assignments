@@ -46,6 +46,9 @@ Pointer slave_thread_operate(Pointer buff) {
 	while (true) {
 		// obtain a fd from the buffer 
 		int fd = obtain(buffer);
+		if (sig_int_raised) {
+			pthread_exit(NULL);
+		}
 		// the buffer is not full anymore (if it already was)
 		pthread_cond_signal(&cond_nonfull);
 		char type;
@@ -115,6 +118,13 @@ Pointer slave_thread_operate(Pointer buff) {
 }
 
 void server_operation(char* query_port, char* stats_port, int buffer_size, int num_threads) {
+	// iniialize a signal set
+	static struct sigaction act_int;
+	// handle our signals with our function, in order to catch them
+    act_int.sa_handler = catch_int;
+    sigfillset(&(act_int.sa_mask));
+	// want to handle SIGINT and SIGQUIT with this function
+    sigaction(SIGINT, &act_int, NULL);
 	// create a cyclic buffer to store the file descriptors from the connections that we are going to serve
 	Buffer buff = initialize_buffer(buffer_size);
 	// initialize the hash table of the directories
