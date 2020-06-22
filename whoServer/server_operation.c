@@ -195,8 +195,27 @@ void server_operation(char* query_port, char* stats_port, int buffer_size, int n
 		read = active;
 		// select the file desc containing data
 		if (select(FD_SETSIZE, &read, NULL, NULL, NULL) < 0) {
-			perror("select:");
-			exit(EXIT_FAILURE);
+			// check for a possble sig interupt
+			if (errno == EINTR) {
+				if (sig_int_raised) {
+					fprintf(stderr, "Exiting the server...");
+					// destroy the buffer
+					destroy_buffer(buff);
+					// join all the threads
+					for (int i = 0; i < num_threads; i++) {
+						int res = pthread_join(thread_ids[i], NULL);
+						if (res) {
+							perror2("pthread_join", res);
+							exit(EXIT_FAILURE);
+						}
+					}
+					// return to the main function to wrap it up
+					return;
+				}
+			} else {
+				perror("select:");
+				exit(EXIT_FAILURE);
+			}
 		}
 		int newsock;
 		// queery fd is ready
@@ -217,22 +236,6 @@ void server_operation(char* query_port, char* stats_port, int buffer_size, int n
 			// the stats connection comes from a worker, and we want to learn his ip
 			socklen_t len = sizeof(workers_ip);
 			getpeername(newsock, (struct sockaddr *) &workers_ip, &len);
-		}
-		// first thing: catch a possible signal
-		if (sig_int_raised) {
-			fprintf(stderr, "Exiting the server...");
-			// destroy the buffer
-			destroy_buffer(buff);
-			// join all the threads
-			for (int i = 0; i < num_threads; i++) {
-				int res = pthread_join(thread_ids[i], NULL);
-				if (res) {
-					perror2("pthread_join", res);
-					exit(EXIT_FAILURE);
-				}
-			}
-			// return to the main function to wrap it up
-			return;
 		}
 		// place the new socket fd in our buffer
 		place(buff, newsock);
