@@ -1,0 +1,20 @@
+/diseaseFrequency COVID-19 05-11-2019 24-05-2020 France  
+/numPatientAdmissions H1N1 28-05-2019 10-01-2020  
+/diseaseFrequency H1N1 02-06-2020 23-07-2020  
+/diseaseFrequency SARS-1 09-12-2019 19-05-2020 Bahrain  
+/searchPatientRecord 876 
+/numPatientDischarges H1N1 06-06-2020 09-08-2020  
+/searchPatientRecord 332 
+/numPatientAdmissions COVID-19 23-08-2020 09-10-2020 Guatemala  
+/numPatientAdmissions HIV 15-09-2019 27-06-2020  
+/topk-AgeRanges 2 Colombia  SARS-COV-2 12-10-2019 26-08-2020 
+/numPatientAdmissions H1N1 11-01-2020 18-07-2020  
+/searchPatientRecord 481 
+/diseaseFrequency HIV 20-01-2019 23-05-2020  
+/searchPatientRecord 167 
+/numPatientDischarges FLU-2018 19-04-2020 05-09-2020 Belgium  
+/numPatientDischarges FLU-2018 14-09-2019 19-06-2020  
+/topk-AgeRanges 2 Gabon  MERS 03-05-2019 03-03-2020 
+/numPatientAdmissions SARS-COV-2 28-08-2020 05-10-2020 Fiji  
+/searchPatientRecord 98 
+/diseaseFrequency MERS 29-10-2019 24-12-2019  

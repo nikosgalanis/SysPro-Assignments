@@ -1,0 +1,5 @@
+/diseaseFrequency disease date1 date2 [country]
+/topk-AgeRanges k country disease date1 date2
+/searchPatientRecord recordID
+/numPatientAdmissions disease date1 date2 [country]
+/numPatientDischarges disease date1 date2 [country]
